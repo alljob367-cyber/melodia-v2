@@ -366,12 +366,25 @@ function FeaturesGrid() {
 function Pricing() {
   const [annual, setAnnual] = useState(true);
 
+  // Prix mensuels de base
+  const monthlyPrices: Record<string, number> = {
+    Basic: 2000,
+    Pro: 5000,
+    Studio: 10000,
+  };
+
+  const formatPrice = (name: string) => {
+    const base = monthlyPrices[name];
+    const finalPrice = annual ? Math.round(base * 0.8) : base;
+    if (name === "Studio") return `${finalPrice.toLocaleString("fr-FR")}+`;
+    return finalPrice.toLocaleString("fr-FR");
+  };
+
   const plans = [
     {
       name: "Basic",
       badge: "IDÉAL POUR DÉBUTER",
       badgeColor: "bg-zinc-700 text-zinc-300",
-      price: "2 000",
       features: [
         { text: "2 chansons IA", included: true },
         { text: "2 pochettes IA", included: true },
@@ -389,7 +402,6 @@ function Pricing() {
       name: "Pro",
       badge: "LE PLUS POPULAIRE",
       badgeColor: "bg-pink-500 text-white",
-      price: "5 000",
       features: [
         { text: "Plus de chansons IA", included: true },
         { text: "Plus de pochettes IA", included: true },
@@ -407,7 +419,6 @@ function Pricing() {
       name: "Studio",
       badge: "POUR LES PROFESSIONNELS",
       badgeColor: "bg-orange-600 text-white",
-      price: "10 000+",
       features: [
         { text: "Tout dans Pro", included: true },
         { text: "Video Studio avancé", included: true },
@@ -477,7 +488,7 @@ function Pricing() {
                   </span>
                   <h3 className="text-white text-xl font-bold">{plan.name}</h3>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-white text-4xl font-bold">{plan.price}</span>
+                    <span className="text-white text-4xl font-bold">{formatPrice(plan.name)}</span>
                     <span className="text-zinc-400 text-sm">FCFA</span>
                     <span className="text-zinc-500 text-sm">/mois</span>
                   </div>

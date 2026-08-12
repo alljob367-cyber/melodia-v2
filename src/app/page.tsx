@@ -1,23 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Music,
   Mic,
-  Image,
+  Image as ImageIcon,
   Video,
   Sparkles,
   ChevronDown,
   Check,
-  Zap,
+  X,
   Crown,
   Star,
   Play,
   ArrowRight,
-  Globe,
-  Brain,
+  Shield,
+  Headphones,
+  Cloud,
+  Share2,
+  MessageCircle,
+  FileText,
+  Palette,
+  Download,
+  SkipBack,
+  SkipForward,
   Volume2,
+  Music2,
+  Facebook,
+  Instagram,
+  Youtube,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,7 +39,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import Link from "next/link";
 
 // ===== ANIMATION VARIANTS =====
 const fadeUp = {
@@ -39,491 +50,635 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
-};
+// ===== HEADER =====
+function Header() {
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <Music2 className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex flex-col leading-none">
+              <span className="text-white font-bold text-lg tracking-wide">MELODIA</span>
+              <span className="text-[10px] text-purple-400 font-medium tracking-wider uppercase">UP TO AFRICA</span>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <nav className="hidden lg:flex items-center gap-6">
+            {["Accueil", "Fonctionnalités", "Tarifs", "À propos", "FAQ", "Blog"].map((item) => (
+              <a
+                key={item}
+                href="#"
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                {item}
+              </a>
+            ))}
+          </nav>
+
+          {/* Right */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-1 text-sm text-zinc-400 border border-white/10 rounded px-2 py-1 cursor-pointer hover:border-white/20 transition-colors">
+              <span>FR</span>
+              <ChevronDown className="w-3 h-3" />
+            </div>
+            <Button variant="outline" className="hidden sm:inline-flex border-white/10 text-zinc-300 hover:text-white hover:border-white/20 text-sm">
+              Se connecter
+            </Button>
+            <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm border-0 shadow-lg shadow-purple-500/25">
+              ✨ Créer ma chanson
+            </Button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
 
 // ===== HERO SECTION =====
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#2e1065] via-[#1a0a3e] to-[#0B0B14]" />
-      {/* Radial glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-purple-600/10 blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-pink-500/8 blur-[100px]" />
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-        backgroundSize: '60px 60px'
-      }} />
+    <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
+      {/* Background */}
+      <div className="absolute inset-0 bg-[#0a0a0f]" />
+      <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-purple-600/15 blur-[150px]" />
+      <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-pink-500/10 blur-[120px]" />
+      <div className="absolute top-1/2 right-1/3 w-[300px] h-[300px] rounded-full bg-cyan-500/8 blur-[100px]" />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 text-center">
-        <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-8">
-          {/* Badge */}
-          <motion.div variants={fadeUp} className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm text-purple-300">
-              <Sparkles className="w-4 h-4" />
-              <span>Propulsé par l&apos;Intelligence Artificielle</span>
-            </div>
-          </motion.div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left Content */}
+          <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-8">
+            {/* Badge */}
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+              <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">NOUVEAU</span>
+              <span className="text-sm text-zinc-300">L&apos;IA qui comprend la vibe</span>
+            </motion.div>
 
-          {/* Main heading */}
-          <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
-            <span className="block text-white">CRÉE TA MUSIQUE</span>
-            <span className="block gradient-text mt-2">AVEC L&apos;IA</span>
-          </motion.h1>
+            {/* Headline */}
+            <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
+              Crée ta musique{" "}
+              <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-violet-500 bg-clip-text text-transparent">
+                avec l&apos;IA
+              </span>
+              .
+            </motion.h1>
 
-          {/* Subtitle */}
-          <motion.p variants={fadeUp} className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-300 leading-relaxed">
-            Générez des chansons complètes, des pochettes et des clips vidéo en quelques clics.
-            <span className="text-purple-400 font-semibold"> Le premier studio musical IA d&apos;Afrique.</span>
-          </motion.p>
+            {/* Subheadline */}
+            <motion.p variants={fadeUp} className="text-lg text-zinc-400 max-w-lg leading-relaxed">
+              Décris ton idée, choisis ton style. Melodia crée ta chanson avec voix, pochette et plus encore.
+            </motion.p>
 
-          {/* CTA Buttons */}
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup">
-              <Button className="btn-gradient text-white font-bold text-lg px-8 py-6 rounded-xl hover:scale-105 transition-transform shadow-lg shadow-purple-500/25">
-                Commencer gratuitement
-                <ArrowRight className="w-5 h-5 ml-2" />
+            {/* CTA Buttons */}
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-4">
+              <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-base px-8 py-6 border-0 shadow-lg shadow-purple-500/25 rounded-xl">
+                ✨ Créer ma chanson
               </Button>
-            </Link>
-            <Link href="#how-it-works">
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/5 font-semibold text-lg px-8 py-6 rounded-xl">
-                <Play className="w-5 h-5 mr-2" />
-                Voir la démo
+              <Button variant="outline" className="border-white/15 text-zinc-300 hover:text-white hover:border-white/25 text-base px-8 py-6 rounded-xl">
+                ▶ Découvrir Melodia
               </Button>
-            </Link>
-          </motion.div>
+            </motion.div>
 
-          {/* Social proof */}
-          <motion.div variants={fadeUp} className="flex items-center justify-center gap-6 pt-4">
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            {/* Social Proof */}
+            <motion.div variants={fadeUp} className="flex items-center gap-3">
               <div className="flex -space-x-2">
-                {[0,1,2,3].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0B0B14] bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs text-white font-bold">
-                    {['JP','AK','MF','SN'][i]}
+                {["E", "A", "S", "K"].map((initial, i) => (
+                  <div
+                    key={i}
+                    className="w-8 h-8 rounded-full border-2 border-[#0a0a0f] flex items-center justify-center text-xs font-bold text-white"
+                    style={{ background: `hsl(${280 + i * 30}, 70%, 55%)` }}
+                  >
+                    {initial}
                   </div>
                 ))}
               </div>
-              <span>2 000+ créateurs</span>
-            </div>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-center gap-1 text-sm text-amber-400">
-              {[0,1,2,3,4].map(i => (
-                <Star key={i} className="w-4 h-4 fill-current" />
-              ))}
-              <span className="text-slate-400 ml-1">4.9/5</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star key={s} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <span className="text-sm text-zinc-400">Déjà adopté par des milliers de créateurs en Afrique</span>
+            </motion.div>
+          </motion.div>
+
+          {/* Right Mockup */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="relative"
+          >
+            {/* Glow behind mockup */}
+            <div className="absolute -inset-10 bg-purple-500/10 blur-[80px] rounded-full" />
+            <div className="absolute -inset-6 bg-pink-500/5 blur-[60px] rounded-full" />
+
+            <div className="relative bg-[#12121a] rounded-2xl border border-white/8 shadow-2xl overflow-hidden" style={{ perspective: "1000px" }}>
+              {/* Album Art */}
+              <div className="relative h-48 overflow-hidden">
+                <img src="/images/album-art.png" alt="Album cover" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4">
+                  <p className="text-white text-xl font-bold">MON RÊVE</p>
+                  <p className="text-purple-300 text-sm font-medium">AFROPOP</p>
+                </div>
+              </div>
+
+              {/* Checklist */}
+              <div className="p-4 space-y-3">
+                <p className="text-white font-semibold text-sm">Ta chanson est prête !</p>
+                {[
+                  "Paroles générées",
+                  "Musique créée",
+                  "Pochette générée",
+                  "Mix & Master IA",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-purple-400" />
+                    </div>
+                    <span className="text-sm text-zinc-300">{item}</span>
+                    <ArrowRight className="w-3 h-3 text-zinc-600 ml-auto" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Audio Player */}
+              <div className="border-t border-white/5 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-xs text-zinc-500">2:24</span>
+                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full w-[65%] bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+                  </div>
+                  <span className="text-xs text-zinc-500">3:45</span>
+                </div>
+                <div className="flex items-center justify-center gap-4">
+                  <SkipBack className="w-4 h-4 text-zinc-400 cursor-pointer hover:text-white transition-colors" />
+                  <button className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                  </button>
+                  <SkipForward className="w-4 h-4 text-zinc-400 cursor-pointer hover:text-white transition-colors" />
+                  <Download className="w-4 h-4 text-zinc-400 cursor-pointer hover:text-white transition-colors" />
+                </div>
+              </div>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       </div>
+    </section>
+  );
+}
 
-      {/* Scroll indicator */}
-      <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <ChevronDown className="w-6 h-6 text-white/30" />
-      </motion.div>
+// ===== FEATURE BANNER =====
+function FeatureBanner() {
+  const features = [
+    { icon: Shield, title: "Paiements sécurisés", subtitle: "100% sécurisés" },
+    { icon: Headphones, title: "IA de nouvelle génération", subtitle: "Résultats premium" },
+    { icon: Cloud, title: "Stockage cloud", subtitle: "Accéder partout" },
+    { icon: Share2, title: "Partage facile", subtitle: "Partout dans le monde" },
+  ];
+
+  return (
+    <section className="relative bg-[#0a0a0f] border-y border-white/5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          {features.map((feat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                <feat.icon className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-semibold">{feat.title}</p>
+                <p className="text-zinc-500 text-xs">{feat.subtitle}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
 
 // ===== HOW IT WORKS =====
-function HowItWorksSection() {
+function HowItWorks() {
   const steps = [
-    {
-      number: "01",
-      title: "Choisis ton style",
-      description: "Sélectionne parmi 10+ styles musicaux africains : Afrobeat, Amapiano, Afropop, Makossa, Bikutsi et plus.",
-      icon: Music,
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-    },
-    {
-      number: "02",
-      title: "Décris ta vision",
-      description: "Indique le thème, l'ambiance et le message de ta chanson. L'IA s'occupe du reste.",
-      icon: Brain,
-      color: "text-pink-400",
-      bg: "bg-pink-500/10",
-    },
-    {
-      number: "03",
-      title: "L'IA crée pour toi",
-      description: "En 30 secondes, obtiens une chanson complète avec paroles, audio, pochette et clip vidéo.",
-      icon: Sparkles,
-      color: "text-amber-400",
-      bg: "bg-amber-500/10",
-    },
+    { icon: Music, title: "Décris ton idée", desc: "Choisis un style, une ambiance et décris ta chanson." },
+    { icon: Sparkles, title: "L'IA crée la musique et tes paroles", desc: "Mélodie composée, écrit et arrange ton morceau." },
+    { icon: ImageIcon, title: "Pochette générée automatiquement", desc: "Une pochette unique créée par l'IA." },
+    { icon: Play, title: "Écoute & télécharge", desc: "Écoute instantanément et télécharge ton morceau." },
+    { icon: Share2, title: "Partage la musique", desc: "Partage ta création avec tes fans partout." },
   ];
 
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 relative">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-purple-600/5 blur-[150px]" />
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}>
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Comment ça marche</span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mt-3">
-              3 étapes pour ta <span className="gradient-text">musique</span>
-            </h2>
-          </motion.div>
+    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+            Comment <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">ça marche</span> ?
+          </h2>
+        </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="relative">
+          {/* Dotted connector line */}
+          <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] border-t-2 border-dashed border-white/10" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
             {steps.map((step, i) => (
-              <motion.div key={i} variants={fadeUp} className="relative">
-                {/* Connector line */}
-                {i < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-16 right-0 translate-x-1/2 w-8 h-px bg-gradient-to-r from-white/10 to-transparent" />
-                )}
-                <Card className="glass p-8 text-center hover:border-purple-500/20 transition-all duration-300 group">
-                  <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl ${step.bg} mb-6 group-hover:scale-110 transition-transform`}>
-                    <step.icon className={`w-7 h-7 ${step.color}`} />
-                  </div>
-                  <span className="text-xs font-bold text-purple-400 tracking-widest">{step.number}</span>
-                  <h3 className="text-xl font-bold text-white mt-2 mb-3">{step.title}</h3>
-                  <p className="text-slate-400 leading-relaxed">{step.description}</p>
-                </Card>
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="flex flex-col items-center text-center relative"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center text-white font-bold text-sm mb-4 relative z-10 shadow-lg shadow-purple-500/30">
+                  {i + 1}
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
+                  <step.icon className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="text-white font-semibold text-sm mb-2">{step.title}</h3>
+                <p className="text-zinc-500 text-xs leading-relaxed">{step.desc}</p>
               </motion.div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
-// ===== FEATURES SECTION =====
-function FeaturesSection() {
+// ===== FEATURES GRID =====
+function FeaturesGrid() {
   const features = [
-    {
-      icon: Music,
-      title: "Music Studio",
-      description: "Génère des chansons complètes avec paroles, mélodie, harmonies et arrangement en un clic.",
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-      border: "border-purple-500/20",
-    },
-    {
-      icon: Mic,
-      title: "Voice Studio",
-      description: "Voix IA réaliste avec chant en français, anglais et langues africaines. Ton style, ta voix.",
-      color: "text-pink-400",
-      bg: "bg-pink-500/10",
-      border: "border-pink-500/20",
-    },
-    {
-      icon: Image,
-      title: "Cover Studio",
-      description: "Pochettes d'album professionnelles générées par IA. Style afro-futuriste, urbain ou traditionnel.",
-      color: "text-amber-400",
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20",
-    },
-    {
-      icon: Video,
-      title: "Video Studio",
-      description: "Clips vidéo courts avec visuels IA synchronisés à ta musique. Parfait pour TikTok & Instagram.",
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-    },
+    { icon: Music, title: "Music Studio", desc: "Crée des chansons uniques dans tous les styles africains et internationaux.", color: "from-pink-500 to-rose-500" },
+    { icon: Mic, title: "Voice Studio", desc: "Génère des voix réalistes et ajoute du chant à tes morceaux.", color: "from-blue-500 to-cyan-500" },
+    { icon: ImageIcon, title: "Cover Studio", desc: "Obtiens des pochettes professionnelles créées par l'IA.", color: "from-emerald-500 to-green-500" },
+    { icon: Video, title: "Video Studio", desc: "Transforme ta musique en clips vidéo avec l'IA (Pro & Studio).", color: "from-red-500 to-orange-500" },
+    { icon: MessageCircle, title: "Assistant Melodia", desc: "Ton copilote créatif pour t'aider à créer plus vite et mieux.", color: "from-purple-500 to-violet-500" },
   ];
 
   return (
-    <section className="py-24 sm:py-32 relative">
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-pink-500/5 blur-[120px]" />
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}>
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <span className="text-sm font-semibold text-pink-400 uppercase tracking-wider">Fonctionnalités</span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mt-3">
-              4 studios <span className="gradient-text">créatifs</span>
-            </h2>
-            <p className="text-slate-400 mt-4 max-w-xl mx-auto">
-              Tout ce dont tu as besoin pour créer de la musique professionnelle, de l&apos;idée au partage.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {features.map((feature, i) => (
-              <motion.div key={i} variants={fadeUp}>
-                <Card className={`glass p-8 hover:border-purple-500/30 transition-all duration-300 group h-full ${feature.border}`}>
-                  <div className="flex items-start gap-5">
-                    <div className={`flex-shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-xl ${feature.bg} group-hover:scale-110 transition-transform`}>
-                      <feature.icon className={`w-6 h-6 ${feature.color}`} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
-                      <p className="text-slate-400 leading-relaxed">{feature.description}</p>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Extra features list */}
-          <motion.div variants={fadeUp} className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { icon: Globe, text: "10+ styles africains" },
-              { icon: Volume2, text: "Audio HD 320kbps" },
-              { icon: Zap, text: "Génération en 30s" },
-              { icon: Crown, text: "Modèles IA premium" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-slate-300 glass rounded-xl px-4 py-3">
-                <item.icon className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                <span>{item.text}</span>
-              </div>
-            ))}
-          </motion.div>
+    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+            Tout ce qu&apos;il te faut pour créer <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">sans limites</span>
+          </h2>
         </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          {features.map((feat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card className="bg-[#12121a] border border-white/6 hover:border-purple-500/30 transition-all duration-300 rounded-2xl p-6 h-full group">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feat.color} flex items-center justify-center mb-4 opacity-80 group-hover:opacity-100 transition-opacity`}>
+                  <feat.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-2">{feat.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{feat.desc}</p>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// ===== PRICING SECTION =====
-function PricingSection() {
+// ===== PRICING =====
+function Pricing() {
+  const [annual, setAnnual] = useState(true);
+
   const plans = [
     {
-      name: "BASIC",
+      name: "Basic",
+      badge: "IDÉAL POUR DÉBUTER",
+      badgeColor: "bg-zinc-700 text-zinc-300",
       price: "2 000",
-      period: "/mois",
-      description: "Pour découvrir la création musicale IA",
       features: [
-        { text: "2 chansons IA / mois", included: true },
-        { text: "2 pochettes IA / mois", included: true },
-        { text: "Audio standard (128 kbps)", included: true },
-        { text: "Jusqu'à 3 min par chanson", included: true },
-        { text: "Téléchargement MP3", included: true },
-        { text: "Partage sur réseaux", included: true },
-        { text: "Voix IA", included: false },
-        { text: "Clips vidéo IA", included: false },
-        { text: "Générations parallèles", included: false },
+        { text: "2 chansons IA", included: true },
+        { text: "2 pochettes IA", included: true },
+        { text: "Paroles assistées", included: true },
+        { text: "Écoute & téléchargement", included: true },
+        { text: "Partage", included: true },
+        { text: "Stockage limité", included: true },
+        { text: "Pas de vidéo", included: false },
       ],
-      popular: false,
-      cta: "Commencer avec BASIC",
+      button: "Commencer avec Basic",
+      buttonStyle: "bg-purple-600 hover:bg-purple-700 text-white",
+      featured: false,
     },
     {
-      name: "PRO",
+      name: "Pro",
+      badge: "LE PLUS POPULAIRE",
+      badgeColor: "bg-pink-500 text-white",
       price: "5 000",
-      period: "/mois",
-      description: "Pour les créateurs sérieux",
       features: [
-        { text: "20 chansons IA / mois", included: true },
-        { text: "20 pochettes IA / mois", included: true },
-        { text: "Haute qualité (320 kbps)", included: true },
-        { text: "Jusqu'à 6 min par chanson", included: true },
-        { text: "Téléchargement MP3 + WAV", included: true },
-        { text: "Partage sur réseaux", included: true },
-        { text: "Voix & chant IA", included: true },
-        { text: "Clips vidéo courts inclus", included: true },
-        { text: "3 générations parallèles", included: true },
+        { text: "Plus de chansons IA", included: true },
+        { text: "Plus de pochettes IA", included: true },
+        { text: "Haute qualité audio", included: true },
+        { text: "Voice Studio", included: true },
+        { text: "Clips vidéo courts", included: true },
+        { text: "Téléchargements illimités", included: true },
+        { text: "Support prioritaire", included: true },
       ],
-      popular: true,
-      cta: "Passer à PRO",
+      button: "Passer à Pro",
+      buttonStyle: "bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white",
+      featured: true,
     },
     {
-      name: "STUDIO",
+      name: "Studio",
+      badge: "POUR LES PROFESSIONNELS",
+      badgeColor: "bg-orange-600 text-white",
       price: "10 000+",
-      period: "/mois",
-      description: "Pour les pros et labels",
       features: [
-        { text: "Production avancée illimitée", included: true },
-        { text: "Pochettes premium illimitées", included: true },
-        { text: "Haute qualité (320 kbps)", included: true },
-        { text: "Jusqu'à 10 min par chanson", included: true },
-        { text: "Tous formats audio", included: true },
-        { text: "Partage + pages cadeaux", included: true },
-        { text: "Voix IA premium", included: true },
-        { text: "Studio vidéo complet", included: true },
-        { text: "Modèles IA exclusifs", included: true },
+        { text: "Tout dans Pro", included: true },
+        { text: "Video Studio avancé", included: true },
+        { text: "Clips vidéo longs", included: true },
+        { text: "Outils professionnels", included: true },
+        { text: "Modèles premium", included: true },
+        { text: "Stockage étendu", included: true },
+        { text: "Support VIP", included: true },
       ],
-      popular: false,
-      cta: "Contacter l'équipe",
+      button: "Passer à Studio",
+      buttonStyle: "bg-purple-600 hover:bg-purple-700 text-white",
+      featured: false,
     },
   ];
 
   return (
-    <section id="pricing" className="py-24 sm:py-32 relative">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-purple-600/5 blur-[150px]" />
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}>
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">Tarifs</span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mt-3">
-              Choisis ton <span className="gradient-text">pack</span>
-            </h2>
-            <p className="text-slate-400 mt-4 max-w-xl mx-auto">
-              Des prix en FCFA, pensés pour les créateurs d&apos;Afrique. Pas de carte bancaire requise pour essayer.
-            </p>
-          </motion.div>
+    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+            Choisis <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">ton plan</span>
+          </h2>
+        </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {plans.map((plan, i) => (
-              <motion.div key={i} variants={fadeUp}>
-                <Card className={`relative glass p-8 h-full flex flex-col ${plan.popular ? 'border-purple-500/30 ring-1 ring-purple-500/20' : ''}`}>
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-flex items-center px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-purple-600 to-pink-500 text-white">
-                        Le plus populaire
-                      </span>
-                    </div>
-                  )}
+        {/* Toggle */}
+        <div className="flex items-center justify-center mb-12">
+          <div className="bg-white/5 rounded-full p-1 flex items-center gap-1 border border-white/10">
+            <button
+              onClick={() => setAnnual(false)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!annual ? "bg-purple-600 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              Mensuel
+            </button>
+            <button
+              onClick={() => setAnnual(true)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${annual ? "bg-purple-600 text-white" : "text-zinc-400 hover:text-white"}`}
+            >
+              Annuel <span className="text-pink-400 text-xs">(-20%)</span>
+            </button>
+          </div>
+        </div>
 
-                  <div className="mb-6">
-                    <h3 className={`text-lg font-bold ${plan.popular ? 'text-purple-400' : 'text-white'}`}>
-                      PACK {plan.name}
-                    </h3>
-                    <p className="text-slate-400 text-sm mt-1">{plan.description}</p>
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-start">
+          {plans.map((plan, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={`relative ${plan.featured ? "lg:-mt-4 lg:mb-4" : ""}`}
+            >
+              {plan.featured && (
+                <div className="absolute -top-3 right-4 z-10">
+                  <Crown className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+                </div>
+              )}
+              <Card className={`bg-[#12121a] border rounded-2xl p-6 lg:p-8 transition-all duration-300 ${
+                plan.featured
+                  ? "border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.3)] scale-[1.02]"
+                  : "border-white/6 hover:border-white/10"
+              }`}>
+                <div className="space-y-4">
+                  <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${plan.badgeColor}`}>
+                    {plan.badge}
+                  </span>
+                  <h3 className="text-white text-xl font-bold">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-white text-4xl font-bold">{plan.price}</span>
+                    <span className="text-zinc-400 text-sm">FCFA</span>
+                    <span className="text-zinc-500 text-sm">/mois</span>
                   </div>
-
-                  <div className="mb-6">
-                    <span className="text-4xl font-extrabold text-amber-400">{plan.price}</span>
-                    <span className="text-slate-400 text-sm ml-1">FCFA{plan.period}</span>
-                  </div>
-
-                  <div className="flex-1 space-y-3 mb-8">
-                    {plan.features.map((feature, j) => (
-                      <div key={j} className="flex items-start gap-3">
-                        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${feature.included ? 'bg-emerald-500/10' : 'bg-white/5'}`}>
-                          <Check className={`w-3 h-3 ${feature.included ? 'text-emerald-400' : 'text-slate-600'}`} />
-                        </div>
-                        <span className={`text-sm ${feature.included ? 'text-slate-300' : 'text-slate-500 line-through'}`}>
-                          {feature.text}
-                        </span>
+                  <div className="space-y-3 pt-2">
+                    {plan.features.map((feat, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        {feat.included ? (
+                          <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3 h-3 text-purple-400" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0">
+                            <X className="w-3 h-3 text-zinc-600" />
+                          </div>
+                        )}
+                        <span className={`text-sm ${feat.included ? "text-zinc-300" : "text-zinc-600"}`}>{feat.text}</span>
                       </div>
                     ))}
                   </div>
-
-                  <Link href="/signup" className="block">
-                    <Button
-                      className={`w-full py-5 rounded-xl font-bold text-sm ${
-                        plan.popular
-                          ? 'btn-gradient text-white shadow-lg shadow-purple-500/25 hover:scale-[1.02] transition-transform'
-                          : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
-                      }`}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </Link>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Launch offer */}
-          <motion.div variants={fadeUp} className="mt-8">
-            <Card className="glass p-6 text-center">
-              <span className="text-2xl mr-2">🎉</span>
-              <span className="text-white font-semibold">Offre de lancement</span>
-              <span className="text-slate-400 mx-2">—</span>
-              <span className="text-slate-300">Premier mois à <span className="line-through text-slate-500">5 000 FCFA</span> <span className="text-amber-400 font-bold">4 000 FCFA</span></span>
-            </Card>
-          </motion.div>
-        </motion.div>
+                  <Button className={`w-full mt-4 py-5 rounded-xl border-0 shadow-lg ${plan.buttonStyle}`}>
+                    {plan.button}
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// ===== FAQ SECTION =====
-function FAQSection() {
-  const faqs = [
+// ===== TESTIMONIALS =====
+function Testimonials() {
+  const testimonials = [
     {
-      q: "Comment fonctionne la génération de musique ?",
-      a: "Notre IA analyse vos préférences de style, thème et ambiance, puis génère une chanson complète avec paroles, mélodie, harmonies et arrangement en moins de 30 secondes.",
+      quote: "Melodia m'a permis de sortir mon premier single sans studio. C'est une révolution !",
+      name: "Eryam",
+      role: "Artiste Afrobeats",
+      initial: "E",
+      color: "from-pink-500 to-purple-500",
     },
     {
-      q: "Quels styles musicaux sont disponibles ?",
-      a: "Nous proposons 10+ styles africains : Afrobeat, Afropop, Amapiano, Afro-R&B, Makossa, Bikutsi, Zouk, Gospel, Rap africain, Highlife et plus. De nouveaux styles sont ajoutés régulièrement.",
+      quote: "Les pochettes sont incroyables et les clips courts m'aident à promouvoir ma musique.",
+      name: "Aïcha",
+      role: "Créatrice de contenu",
+      initial: "A",
+      color: "from-purple-500 to-blue-500",
     },
     {
-      q: "Puis-je utiliser les chansons commercialement ?",
-      a: "Oui ! Toutes les chansons générées avec les plans PRO et STUDIO peuvent être utilisées commercialement. Le plan BASIC est réservé à un usage personnel.",
-    },
-    {
-      q: "Comment fonctionne le système de crédits ?",
-      a: "Chaque plan vous donne un nombre de crédits mensuels pour créer des chansons et pochettes. Les crédits se renouvellent chaque mois. Les crédits non utilisés ne sont pas reportés.",
-    },
-    {
-      q: "Quels moyens de paiement acceptez-vous ?",
-      a: "Nous acceptons Mobile Money (MTN, Orange, Wave), cartes bancaires, et PayPal. Tous les paiements sont en FCFA et 100% sécurisés.",
-    },
-    {
-      q: "Puis-je annuler mon abonnement à tout moment ?",
-      a: "Absolument. Vous pouvez annuler votre abonnement à tout moment depuis les paramètres. Vous conservez l'accès jusqu'à la fin de la période payée.",
+      quote: "Le plan Studio est un vrai studio de poche. Je produit tout avec Melodia maintenant !",
+      name: "Samy",
+      role: "Producteur",
+      initial: "S",
+      color: "from-emerald-500 to-cyan-500",
     },
   ];
 
   return (
-    <section className="py-24 sm:py-32 relative">
-      <div className="relative max-w-3xl mx-auto px-4 sm:px-6">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}>
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">FAQ</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mt-3">
-              Questions <span className="gradient-text">fréquentes</span>
-            </h2>
-          </motion.div>
+    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+            Ils créent avec <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Melodia</span>
+          </h2>
+        </motion.div>
 
-          <motion.div variants={fadeUp}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card className="bg-[#12121a] border border-white/6 rounded-2xl p-6 h-full">
+                <div className="flex items-center gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-zinc-300 text-sm leading-relaxed mb-6 italic">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${t.color} flex items-center justify-center text-white font-bold text-sm`}>
+                    {t.initial}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-semibold">{t.name}</p>
+                    <p className="text-zinc-500 text-xs">{t.role}</p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Pagination dots */}
+        <div className="flex items-center justify-center gap-2 mt-8">
+          {[0, 1, 2, 3].map((d) => (
+            <div key={d} className={`w-2 h-2 rounded-full ${d === 0 ? "bg-purple-500" : "bg-white/20"}`} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ===== FAQ + CONTACT =====
+function FAQSection() {
+  const faqs = [
+    {
+      q: "Comment fonctionne Melodia ?",
+      a: "Melodia utilise l'intelligence artificielle pour générer de la musique à partir de votre description. Vous décrivez votre idée, choisissez un style musical, et notre IA compose la mélodie, écrit les paroles, et produit un morceau complet avec pochette.",
+    },
+    {
+      q: "Ai-je besoin d'expérience en musique ?",
+      a: "Non, aucune expérience n'est requise ! Melodia est conçu pour les créateurs de tous niveaux. Décrivez simplement votre idée en langage naturel et l'IA s'occupe du reste.",
+    },
+    {
+      q: "Puis-je utiliser ma musique à des fins commerciales ?",
+      a: "Oui, avec les plans Pro et Studio, vous disposez d'une licence commerciale complète pour utiliser votre musique générée sur toutes les plateformes de streaming et réseaux sociaux.",
+    },
+    {
+      q: "Quels sont les moyens de paiement acceptés ?",
+      a: "Nous acceptons les cartes bancaires, Mobile Money (Orange Money, MTN Money, Wave), PayPal et les virements bancaires. Les paiements sont 100% sécurisés.",
+    },
+  ];
+
+  return (
+    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+            Questions <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">fréquentes</span>
+          </h2>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
+          {/* FAQ */}
+          <div className="lg:col-span-3">
             <Accordion type="single" collapsible className="space-y-3">
               {faqs.map((faq, i) => (
                 <AccordionItem
                   key={i}
                   value={`item-${i}`}
-                  className="glass rounded-xl px-6 border-none data-[state=open]:border-purple-500/20 data-[state=open]:bg-purple-500/5 transition-colors"
+                  className="bg-[#12121a] border border-white/6 rounded-xl px-6 data-[state=open]:border-purple-500/30 transition-colors"
                 >
-                  <AccordionTrigger className="text-left text-white font-semibold hover:no-underline py-5">
+                  <AccordionTrigger className="text-white text-sm font-medium hover:no-underline py-4">
                     {faq.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-400 leading-relaxed pb-5">
+                  <AccordionContent className="text-zinc-400 text-sm leading-relaxed pb-4">
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
-          </motion.div>
-        </motion.div>
+          </div>
+
+          {/* Contact Box */}
+          <div className="lg:col-span-2">
+            <Card className="bg-[#12121a] border border-white/6 rounded-2xl p-8 flex flex-col items-center text-center h-full justify-center">
+              <div className="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center mb-6 relative">
+                <Headphones className="w-10 h-10 text-purple-400" />
+                <div className="absolute inset-0 rounded-full bg-purple-500/10 blur-xl" />
+              </div>
+              <h3 className="text-white text-xl font-bold mb-2">Tu as d&apos;autres questions ?</h3>
+              <p className="text-zinc-400 text-sm mb-6">Notre équipe est là pour t&apos;aider.</p>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-5 rounded-xl border-0 shadow-lg shadow-purple-500/25">
+                Nous contacter
+              </Button>
+            </Card>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-// ===== FINAL CTA SECTION =====
-function FinalCTASection() {
+// ===== BOTTOM CTA =====
+function BottomCTA() {
   return (
-    <section className="py-24 sm:py-32 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0B0B14] via-[#1a0a3e] to-[#0B0B14]" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-purple-600/10 blur-[120px]" />
+    <section className="relative py-20 lg:py-28 overflow-hidden">
+      {/* Background image with overlay */}
+      <div className="absolute inset-0">
+        <img src="/images/concert-bg.png" alt="Concert" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-purple-900/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-transparent to-[#0a0a0f]" />
+      </div>
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
-          <motion.div variants={fadeUp} className="space-y-6">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
-              Prêt à créer ta <span className="gradient-text">prochaine chanson</span> ?
-            </h2>
-            <p className="text-slate-400 text-lg max-w-xl mx-auto">
-              Rejoins des milliers de créateurs qui utilisent MELODIA pour donner vie à leur musique. Aucune carte requise pour commencer.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link href="/signup">
-                <Button className="btn-gradient text-white font-bold text-lg px-10 py-6 rounded-xl hover:scale-105 transition-transform shadow-lg shadow-purple-500/25">
-                  Créer ma première chanson
-                  <Sparkles className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </div>
-            <p className="text-sm text-slate-500">
-              🔒 Paiement 100% sécurisé · Annulation à tout moment
-            </p>
-          </motion.div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+            Prêt à créer le prochain <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">hit</span> ?
+          </h2>
+          <p className="text-zinc-300 text-lg mb-8 max-w-xl mx-auto">
+            Rejoins des milliers de créateurs qui font déjà confiance à Melodia.
+          </p>
+          <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-lg px-10 py-6 border-0 shadow-lg shadow-purple-500/30 rounded-xl">
+            ✨ Créer ma chanson maintenant
+          </Button>
         </motion.div>
       </div>
     </section>
@@ -533,92 +688,117 @@ function FinalCTASection() {
 // ===== FOOTER =====
 function Footer() {
   return (
-    <footer className="border-t border-white/5 py-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8">
-          <div>
+    <footer className="bg-[#0a0a0f] border-t border-white/5 pt-12 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center">
-                <Music className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Music2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-lg font-extrabold text-white tracking-wider">MELODIA</span>
+              <div className="flex flex-col leading-none">
+                <span className="text-white font-bold text-lg tracking-wide">MELODIA</span>
+                <span className="text-[10px] text-purple-400 font-medium tracking-wider uppercase">UP TO AFRICA</span>
+              </div>
             </div>
-            <p className="text-sm text-slate-500">L&apos;IA qui crée ta musique. Made in Africa 🌍</p>
+            <p className="text-zinc-500 text-xs leading-relaxed mb-4">
+              La plateforme africaine de création musicale et vidéo assistée par IA.
+            </p>
+            <div className="flex items-center gap-3">
+              {[Facebook, Instagram, Music2, Youtube].map((Icon, i) => (
+                <a key={i} href="#" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
+            </div>
           </div>
+
+          {/* Produit */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Produit</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#how-it-works" className="hover:text-white transition-colors">Comment ça marche</a></li>
-              <li><a href="#pricing" className="hover:text-white transition-colors">Tarifs</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Styles musicaux</a></li>
+            <h4 className="text-white text-sm font-semibold mb-4">Produit</h4>
+            <ul className="space-y-2">
+              {["Fonctionnalités", "Tarifs", "Mises à jour", "API (bientôt)"].map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-zinc-500 text-xs hover:text-zinc-300 transition-colors">{item}</a>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Ressources */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Support</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#" className="hover:text-white transition-colors">Centre d&apos;aide</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Communauté</a></li>
+            <h4 className="text-white text-sm font-semibold mb-4">Ressources</h4>
+            <ul className="space-y-2">
+              {["Blog", "FAQ", "Guides", "Contact"].map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-zinc-500 text-xs hover:text-zinc-300 transition-colors">{item}</a>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Légal */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Légal</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#" className="hover:text-white transition-colors">CGU</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Confidentialité</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Licences</a></li>
+            <h4 className="text-white text-sm font-semibold mb-4">Légal</h4>
+            <ul className="space-y-2">
+              {["Conditions d'utilisation", "Politique de confidentialité", "Politique de remboursement"].map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-zinc-500 text-xs hover:text-zinc-300 transition-colors">{item}</a>
+                </li>
+              ))}
             </ul>
+          </div>
+
+          {/* Télécharger l'app */}
+          <div>
+            <h4 className="text-white text-sm font-semibold mb-4">Télécharger l&apos;app</h4>
+            <p className="text-zinc-500 text-xs mb-3">Bientôt disponible sur</p>
+            <div className="space-y-2">
+              {/* Google Play Badge */}
+              <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 flex items-center gap-2">
+                <Play className="w-4 h-4 text-white" />
+                <div className="flex flex-col leading-none">
+                  <span className="text-[8px] text-zinc-400">GET IT ON</span>
+                  <span className="text-[10px] text-white font-medium">Google Play</span>
+                </div>
+              </div>
+              {/* App Store Badge */}
+              <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-white" />
+                <div className="flex flex-col leading-none">
+                  <span className="text-[8px] text-zinc-400">DOWNLOAD ON</span>
+                  <span className="text-[10px] text-white font-medium">App Store</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">© 2026 MELODIA. Tous droits réservés.</p>
-          <p className="text-sm text-slate-500">Fait avec 💜 en Afrique</p>
+
+        {/* Copyright */}
+        <div className="border-t border-white/5 pt-6 text-center">
+          <p className="text-zinc-600 text-xs">&copy; 2025 Melodia Up to Africa. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
   );
 }
 
-// ===== MAIN LANDING PAGE =====
-export default function LandingPage() {
+// ===== MAIN PAGE =====
+export default function MelodiaLandingPage() {
   return (
-    <div className="min-h-screen bg-[#0B0B14]">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-strong">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center">
-              <Music className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-extrabold text-white tracking-wider">MELODIA</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#how-it-works" className="text-sm text-slate-400 hover:text-white transition-colors">Comment ça marche</a>
-            <a href="#pricing" className="text-sm text-slate-400 hover:text-white transition-colors">Tarifs</a>
-            <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors">FAQ</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" className="text-sm text-slate-400 hover:text-white">
-                Connexion
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="btn-gradient text-white text-sm font-semibold rounded-lg px-5">
-                S&apos;inscrire
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Page sections */}
-      <HeroSection />
-      <HowItWorksSection />
-      <FeaturesSection />
-      <PricingSection />
-      <FAQSection />
-      <FinalCTASection />
+    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <HeroSection />
+        <FeatureBanner />
+        <HowItWorks />
+        <FeaturesGrid />
+        <Pricing />
+        <Testimonials />
+        <FAQSection />
+        <BottomCTA />
+      </main>
       <Footer />
     </div>
   );

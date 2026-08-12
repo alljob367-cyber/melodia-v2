@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ USER & AUTH ============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  image         String?
+  role          String    @default("user") // user, admin
+  plan          String    @default("basic") // basic, pro, studio
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+
+  credits       UserCredits?
+  songs         Song[]
+  transactions  CreditTransaction[]
+  analytics     AnalyticsEvent[]
+  auditLogs     AuditLog[]
+  giftPages     GiftPage[]
+  accounts      Account[]
+  sessions      Session[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============ CREDITS SYSTEM ============
+
+model UserCredits {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  songsRemaining  Int      @default(2)
+  coversRemaining Int      @default(2)
+  totalSongsUsed  Int      @default(0)
+  totalCoversUsed Int      @default(0)
+  storageUsedMb   Float    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // debit, credit
+  category    String   // song, cover, voice, video, storage, bonus, purchase
+  amount      Int
+  description String?
+  packId      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model CreditPack {
+  id          String   @id @default(cuid())
+  name        String
+  plan        String   // basic, pro, studio
+  price       Int      // in FCFA
+  songsLimit  Int
+  coversLimit Int
+  features    String   // JSON string of features
+  isPopular   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ SONGS & CONTENT ============
+
+model Song {
+  id            String    @id @default(cuid())
+  userId        String
+  title         String
+  style         String    // Afrobeat, Amapiano, etc.
+  mood          String?   // Joyful, Melancholic, etc.
+  theme         String?   // Love, Freedom, etc.
+  language      String    @default("fr")
+
+  lyricsText    String?
+  audioUrl      String?
+  coverUrl      String?
+  videoUrl      String?
+  duration      Int?      // seconds
+
+  status        String    @default("draft") // draft, generating, completed, failed
+  isPublic      Boolean   @default(false)
+  playCount     Int       @default(0)
+  downloadCount Int       @default(0)
+  shareCount    Int       @default(0)
+
+  lyrics        Lyrics?
+  storyAnalysis StoryAnalysis?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lyrics {
+  id        String @id @default(cuid())
+  songId    String @unique
+  content   String
+  language  String @default("fr")
+  version   Int    @default(1)
+
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StoryAnalysis {
+  id          String @id @default(cuid())
+  songId      String @unique
+  summary     String
+  keywords    String // JSON array
+  sentiment   String
+  themes      String // JSON array
+
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ============ AI & AUDIT ============
+
+model AIRequestLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  endpoint    String
+  model       String
+  promptTokens   Int?
+  completionTokens Int?
+  totalTokens     Int?
+  cost        Float?
+  status      String   // success, error
+  error       String?
+  duration    Int?     // ms
+
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?  // JSON
+
+  user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============ ANALYTICS ============
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  event     String
+  data      String?  // JSON
+  page      String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============ GIFT / SHARE ============
+
+model GiftPage {
+  id        String   @id @default(cuid())
+  userId    String
+  songId    String?
+  slug      String   @unique
+  message   String?
+  isActive  Boolean  @default(true)
+  viewCount Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

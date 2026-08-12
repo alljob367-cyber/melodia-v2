@@ -161,7 +161,7 @@ function HeroSection() {
                   <Star key={s} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <span className="text-sm text-zinc-400">Déjà adopté par des milliers de créateurs en Afrique</span>
+              <span className="text-xs sm:text-sm text-zinc-400">Déjà adopté par des milliers de créateurs en Afrique</span>
             </motion.div>
           </motion.div>
 
@@ -178,7 +178,7 @@ function HeroSection() {
 
             <div className="relative bg-[#12121a] rounded-2xl border border-white/8 shadow-2xl overflow-hidden" style={{ perspective: "1000px" }}>
               {/* Album Art */}
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-48 overflow-hidden rounded-t-2xl">
                 <img src="/images/album-art.png" alt="Album cover" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4">
@@ -282,7 +282,7 @@ function HowItWorks() {
   return (
     <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Comment <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">ça marche</span> ?
           </h2>
@@ -332,7 +332,7 @@ function FeaturesGrid() {
   return (
     <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Tout ce qu&apos;il te faut pour créer <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">sans limites</span>
           </h2>
@@ -437,7 +437,7 @@ function Pricing() {
   return (
     <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-12">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-12 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Choisis <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">ton plan</span>
           </h2>
@@ -550,7 +550,7 @@ function Testimonials() {
   return (
     <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Ils créent avec <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Melodia</span>
           </h2>
@@ -621,7 +621,7 @@ function FAQSection() {
   return (
     <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Questions <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">fréquentes</span>
           </h2>
@@ -798,7 +798,7 @@ function Footer() {
 // ===== MAIN PAGE =====
 export default function MelodiaLandingPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
         <HeroSection />

@@ -42,7 +42,8 @@ export default function LoginPage() {
         setTimeout(() => { window.location.href = "/dashboard"; }, 500);
       }
     } catch (error) {
-      toast.error("Erreur de connexion");
+      console.error("Login error:", error);
+      toast.error("Erreur de connexion au serveur");
     } finally {
       setLoading(false);
     }

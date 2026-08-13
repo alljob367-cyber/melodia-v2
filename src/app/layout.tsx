@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/auth-provider";
+import { MeloChat } from "@/components/melo/melo-chat";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +51,8 @@ export default function RootLayout({
         >
           <AuthProvider>
             {children}
+            {/* Melo — Assistant IA flottant (disponible sur TOUTES les pages) */}
+            <MeloChat />
           </AuthProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>

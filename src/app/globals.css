@@ -186,6 +186,76 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ===== MOBILE-FIRST UTILITIES ===== */
+
+/* Safe area for bottom navigation (iPhone notch) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch target minimum 44px (Apple HIG) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth scroll for mobile */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent horizontal overflow on mobile */
+body {
+  overflow-x: hidden;
+}
+
+/* Mobile-friendly input zoom prevention (iOS) */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Mobile bottom nav spacing */
+@media screen and (max-width: 1023px) {
+  .mobile-bottom-spacer {
+    padding-bottom: 5rem;
+  }
+}
+
+/* Melo mascot animations */
+@keyframes melo-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes melo-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
+}
+
+.melo-bounce {
+  animation: melo-bounce 2s ease-in-out infinite;
+}
+
+.melo-glow {
+  animation: melo-glow 3s ease-in-out infinite;
+}
+
 /* Hide Next.js dev indicator */
 nextjs-portal {
   display: none !important;

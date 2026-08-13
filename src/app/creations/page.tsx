@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
+import { MobileBottomNav } from "@/components/mobile-nav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,18 +139,21 @@ export default function CreationsPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        userPlan={userPlan}
-        songsRemaining={2}
-        songsTotal={2}
-      />
+      {/* Sidebar desktop uniquement */}
+      <div className="hidden lg:block">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          userPlan={userPlan}
+          songsRemaining={2}
+          songsTotal={2}
+        />
+      </div>
 
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+      <main className={`transition-all duration-300 lg:${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"} pb-20 lg:pb-0`}>
         <Header title="Mes créations" userName={userName} userPlan={userPlan} />
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Top bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
@@ -300,6 +304,7 @@ export default function CreationsPage() {
           )}
         </div>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

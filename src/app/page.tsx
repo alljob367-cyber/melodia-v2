@@ -49,7 +49,9 @@ import {
   Radio,
   Users,
   Zap,
+  Menu,
 } from "lucide-react";
+import { MobileMenu } from "@/components/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -206,7 +208,7 @@ function Header() {
             </div>
           </a>
 
-          {/* Nav */}
+          {/* Nav Desktop */}
           <nav className="hidden lg:flex items-center gap-6">
             <a href="#accueil" className="text-sm text-zinc-400 hover:text-white transition-colors">Accueil</a>
             <a href="#pipeline" className="text-sm text-zinc-400 hover:text-white transition-colors">Pipeline</a>
@@ -218,6 +220,8 @@ function Header() {
 
           {/* Right */}
           <div className="flex items-center gap-3">
+            {/* Mobile Menu Hamburger */}
+            <MobileMenu isLoggedIn={isLoggedIn} userName={session?.user?.name} />
             {/* Language Selector */}
             <div className="relative hidden sm:block">
               <button

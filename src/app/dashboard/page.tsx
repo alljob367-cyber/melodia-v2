@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
+import { MobileBottomNav } from "@/components/mobile-nav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -143,18 +144,22 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        userPlan={userPlan}
-        songsRemaining={credits?.songsRemaining || 3}
-        songsTotal={credits?.songsRemaining || 3}
-      />
+      {/* Sidebar desktop uniquement */}
+      <div className="hidden lg:block">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          userPlan={userPlan}
+          songsRemaining={credits?.songsRemaining || 3}
+          songsTotal={credits?.songsRemaining || 3}
+        />
+      </div>
 
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+      {/* Mobile: sidebar caché, Bottom Nav visible */}
+      <main className={`transition-all duration-300 lg:${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"} pb-20 lg:pb-0`}>
         <Header title="Studio" userName={userName} userPlan={userPlan} />
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Welcome banner */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -415,6 +420,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+      {/* Navigation mobile en bas */}
+      <MobileBottomNav />
     </div>
   );
 }

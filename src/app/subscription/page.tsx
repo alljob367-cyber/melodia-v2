@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
+import { MobileBottomNav } from "@/components/mobile-nav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -241,18 +242,21 @@ export default function SubscriptionPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        userPlan="basic"
-        songsRemaining={2}
-        songsTotal={2}
-      />
+      {/* Sidebar desktop uniquement */}
+      <div className="hidden lg:block">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          userPlan="basic"
+          songsRemaining={2}
+          songsTotal={2}
+        />
+      </div>
 
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+      <main className={`transition-all duration-300 lg:${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"} pb-20 lg:pb-0`}>
         <Header title="Abonnement" userName="Jean Paul" userPlan="basic" />
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Page title */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -593,6 +597,7 @@ export default function SubscriptionPage() {
           </motion.div>
         </div>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Melodia Up To Africa - Kit Media</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<style>
+@page {
+  size: A4;
+  margin: 0;
+}
+:root {
+  --purple-900: #4C1D95;
+  --purple-700: #7C3AED;
+  --purple-500: #A855F7;
+  --purple-300: #C084FC;
+  --magenta-500: #EC4899;
+  --magenta-300: #F472B6;
+  --dark: #0f0a1e;
+  --dark-2: #1a0a2e;
+  --dark-3: #1e1145;
+  --white: #FFFFFF;
+  --gray-100: #F3F4F6;
+  --gray-300: #D1D5DB;
+  --gray-500: #6B7280;
+  --gray-700: #374151;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--dark);
+  font-family: var(--font-sans);
+  color: var(--white);
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+}
+
+.page:last-child { page-break-after: auto; }
+
+/* ===== COVER PAGE ===== */
+.cover {
+  background: linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 40%, var(--dark-3) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40mm 20mm;
+}
+
+.cover-pattern {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  opacity: 0.06;
+  background-image: 
+    radial-gradient(circle at 20% 30%, var(--purple-500) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, var(--magenta-500) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, var(--purple-700) 0%, transparent 70%);
+}
+
+.cover-logo-area {
+  width: 180px;
+  height: 180px;
+  border-radius: 40px;
+  background: linear-gradient(135deg, var(--purple-700), var(--magenta-500));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 20px 60px rgba(124, 58, 237, 0.4);
+}
+
+.cover-logo-area img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  border-radius: 30px;
+}
+
+.cover h1 {
+  font-family: var(--font-serif);
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--purple-300), var(--magenta-300));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.cover h2 {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--gray-300);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.cover-subtitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--white);
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.cover-desc {
+  font-size: 14px;
+  color: var(--gray-500);
+  max-width: 400px;
+  line-height: 1.7;
+  position: relative;
+  z-index: 2;
+}
+
+.cover-line {
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--purple-700), var(--magenta-500));
+  border-radius: 2px;
+  margin: 30px auto;
+  position: relative;
+  z-index: 2;
+}
+
+.cover-footer {
+  position: absolute;
+  bottom: 25mm;
+  font-size: 11px;
+  color: var(--gray-500);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+/* ===== LOGO SHOWCASE PAGE ===== */
+.logo-page {
+  background: var(--white);
+  color: var(--gray-700);
+  padding: 20mm 18mm;
+}
+
+.section-header {
+  margin-bottom: 30px;
+}
+
+.section-header h2 {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--purple-900);
+  margin-bottom: 6px;
+}
+
+.section-header .line {
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--purple-700), var(--magenta-500));
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+
+.section-header p {
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.6;
+}
+
+.logo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.logo-card {
+  border: 1px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  background: var(--gray-100);
+}
+
+.logo-card.dark-card {
+  background: var(--dark);
+  border-color: var(--dark-3);
+}
+
+.logo-card img {
+  max-width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+
+.logo-card .label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gray-500);
+}
+
+.logo-card.dark-card .label {
+  color: var(--gray-300);
+}
+
+.logo-card .size-info {
+  font-size: 10px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+/* ===== COLORS PAGE ===== */
+.colors-page {
+  background: var(--white);
+  color: var(--gray-700);
+  padding: 20mm 18mm;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.color-swatch {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--gray-300);
+}
+
+.color-swatch .swatch-block {
+  height: 80px;
+}
+
+.color-swatch .swatch-info {
+  padding: 10px 14px;
+  background: var(--gray-100);
+}
+
+.color-swatch .swatch-info .name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.color-swatch .swatch-info .hex {
+  font-size: 11px;
+  font-family: 'Inter', monospace;
+  color: var(--gray-500);
+}
+
+.typo-section {
+  margin-top: 20px;
+}
+
+.typo-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.typo-row .sample {
+  flex: 1;
+}
+
+.typo-row .meta {
+  font-size: 10px;
+  color: var(--gray-500);
+  text-align: right;
+  min-width: 120px;
+}
+
+/* ===== CAROUSEL PAGE ===== */
+.carousel-page {
+  background: var(--dark);
+  color: var(--white);
+  padding: 15mm 12mm;
+}
+
+.carousel-page .section-header h2 {
+  color: var(--white);
+}
+
+.carousel-page .section-header p {
+  color: var(--gray-500);
+}
+
+.carousel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.carousel-item {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--dark-3);
+  position: relative;
+}
+
+.carousel-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.carousel-item .slide-num {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(124, 58, 237, 0.9);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-caption {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+/* ===== GUIDELINES PAGE ===== */
+.guide-page {
+  background: var(--white);
+  color: var(--gray-700);
+  padding: 20mm 18mm;
+}
+
+.guide-section {
+  margin-bottom: 28px;
+}
+
+.guide-section h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--purple-900);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--purple-700);
+}
+
+.guide-section p, .guide-section li {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--gray-700);
+}
+
+.guide-section ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.guide-section li {
+  padding: 4px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.guide-section li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--purple-700);
+}
+
+.spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 11px;
+}
+
+.spec-table th {
+  background: var(--purple-900);
+  color: white;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.spec-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--gray-300);
+  color: var(--gray-700);
+}
+
+.spec-table tr:nth-child(even) td {
+  background: var(--gray-100);
+}
+
+/* ===== FACEBOOK SPECS BADGE ===== */
+.fb-specs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1877F2;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 10mm;
+  right: 18mm;
+  font-size: 10px;
+  color: var(--gray-500);
+}
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="page cover">
+  <div class="cover-pattern"></div>
+  <div class="cover-logo-area">
+    <img src="melodia-logo-icon.png" alt="Melodia Logo">
+  </div>
+  <h1>MELODIA</h1>
+  <h2>Up To Africa</h2>
+  <div class="cover-line"></div>
+  <div class="cover-subtitle">Kit Media Officiel</div>
+  <p class="cover-desc">Identite visuelle, charte graphique et assets pour campagnes Facebook Carrousel. Tout ce dont vous avez besoin pour promouvoir la premiere plateforme AI musicale d'Afrique.</p>
+  <div class="cover-footer">Version 1.0 — Août 2026</div>
+</div>
+
+<!-- PAGE 2: LOGO VARIANTS -->
+<div class="page logo-page">
+  <div class="section-header">
+    <h2>Logo & Identite</h2>
+    <div class="line"></div>
+    <p>Le logo Melodia existe en plusieurs declinaisons pour s'adapter a tous les supports : site web, reseaux sociaux, print et video. Respectez toujours la zone d'exclusion minimale (espace vide autour du logo equivalent a la hauteur du "M").</p>
+  </div>
+
+  <div class="logo-grid">
+    <div class="logo-card">
+      <img src="melodia-logo-icon.png" alt="Logo Icon">
+      <div class="label">Icone (App/ Favicon)</div>
+      <div class="size-info">1024 x 1024 px — Fond transparent</div>
+    </div>
+    <div class="logo-card dark-card">
+      <img src="melodia-logo-dark.png" alt="Logo Dark">
+      <div class="label">Icone Dark Mode</div>
+      <div class="size-info">1024 x 1024 px — Fond sombre</div>
+    </div>
+    <div class="logo-card">
+      <img src="melodia-logo-horizontal.png" alt="Logo Horizontal">
+      <div class="label">Horizontal (Header/ Email)</div>
+      <div class="size-info">1152 x 864 px — Fond clair</div>
+    </div>
+    <div class="logo-card">
+      <img src="melodia-logo-stacked.png" alt="Logo Stacked">
+      <div class="label">Vertical (Print/ Poster)</div>
+      <div class="size-info">864 x 1152 px — Fond clair</div>
+    </div>
+  </div>
+
+  <div class="guide-section">
+    <h3>Regles d'utilisation du logo</h3>
+    <ul>
+      <li>Ne jamais etirer, deformer ou modifier les proportions du logo</li>
+      <li>Ne pas placer le logo sur un fond trop charge sans ajout d'un conteneur blanc/sombre</li>
+      <li>Respecter un espace vide minimum autour du logo (zone d'exclusion = hauteur du "M")</li>
+      <li>Version claire sur fonds sombres, version sombre sur fonds clairs</li>
+      <li>Taille minimale : 32px pour l'icone, 120px de large pour la version horizontale</li>
+    </ul>
+  </div>
+  <span class="page-number">2</span>
+</div>
+
+<!-- PAGE 3: COLORS & TYPOGRAPHY -->
+<div class="page colors-page">
+  <div class="section-header">
+    <h2>Couleurs & Typographie</h2>
+    <div class="line"></div>
+    <p>La palette Melodia est construite autour du violet et du magenta, symbolisant la creativite musicale et l'energie africaine. Chaque couleur a un role precis dans la hierarchie visuelle.</p>
+  </div>
+
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="swatch-block" style="background:#7C3AED"></div>
+      <div class="swatch-info">
+        <div class="name">Purple 700 (Primary)</div>
+        <div class="hex">#7C3AED — RGB 124, 58, 237</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch-block" style="background:#A855F7"></div>
+      <div class="swatch-info">
+        <div class="name">Purple 500</div>
+        <div class="hex">#A855F7 — RGB 168, 85, 247</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch-block" style="background:#EC4899"></div>
+      <div class="swatch-info">
+        <div class="name">Magenta 500 (Accent)</div>
+        <div class="hex">#EC4899 — RGB 236, 72, 153</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch-block" style="background:#0f0a1e"></div>
+      <div class="swatch-info">
+        <div class="name">Dark 900 (Background)</div>
+        <div class="hex">#0f0a1e — RGB 15, 10, 30</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch-block" style="background:#1e1145"></div>
+      <div class="swatch-info">
+        <div class="name">Dark 700 (Surface)</div>
+        <div class="hex">#1e1145 — RGB 30, 17, 69</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="swatch-block" style="background:#FFFFFF; border-bottom: 1px solid #D1D5DB"></div>
+      <div class="swatch-info">
+        <div class="name">White (Text on Dark)</div>
+        <div class="hex">#FFFFFF — RGB 255, 255, 255</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="typo-section">
+    <div class="section-header">
+      <h2>Typographie</h2>
+      <div class="line"></div>
+    </div>
+    <div class="typo-row">
+      <div class="sample" style="font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; color: #4C1D95;">Playfair Display</div>
+      <div class="meta">Titres & Headlines<br>Weight: 700-900</div>
+    </div>
+    <div class="typo-row">
+      <div class="sample" style="font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 600; color: #374151;">Inter SemiBold</div>
+      <div class="meta">Sous-titres & CTA<br>Weight: 500-600</div>
+    </div>
+    <div class="typo-row">
+      <div class="sample" style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 400; color: #374151;">Inter Regular — Corps de texte et descriptions pour les interfaces et supports print.</div>
+      <div class="meta">Body Text<br>Weight: 400, Line: 1.6</div>
+    </div>
+    <div class="typo-row">
+      <div class="sample" style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; color: #6B7280; letter-spacing: 1px; text-transform: uppercase;">INTER CAPS — LABELS & METADATA</div>
+      <div class="meta">Captions & Labels<br>Weight: 500, Caps</div>
+    </div>
+  </div>
+  <span class="page-number">3</span>
+</div>
+
+<!-- PAGE 4: CAROUSEL SLIDES 1-6 -->
+<div class="page carousel-page">
+  <div class="section-header">
+    <h2>Facebook Carrousel — Slides 1-6</h2>
+    <div class="line"></div>
+    <div class="fb-specs">Format : 1080 x 1080 px (1:1) — Min 2, Max 10 slides</div>
+  </div>
+
+  <div class="carousel-grid">
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">1</div>
+        <img src="carousel-01-hero.png" alt="Slide 1 Hero">
+      </div>
+      <div class="carousel-caption">Hero — Introduction</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">2</div>
+        <img src="carousel-02-lyrics.png" alt="Slide 2 Lyrics">
+      </div>
+      <div class="carousel-caption">AI Lyrics Generator</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">3</div>
+        <img src="carousel-03-music.png" alt="Slide 3 Music">
+      </div>
+      <div class="carousel-caption">AI Beat Maker</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">4</div>
+        <img src="carousel-04-cover.png" alt="Slide 4 Cover">
+      </div>
+      <div class="carousel-caption">AI Cover Art</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">5</div>
+        <img src="carousel-05-video.png" alt="Slide 5 Video">
+      </div>
+      <div class="carousel-caption">AI Music Videos</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">6</div>
+        <img src="carousel-06-pricing.png" alt="Slide 6 Pricing">
+      </div>
+      <div class="carousel-caption">Pay As You Go</div>
+    </div>
+  </div>
+  <span class="page-number" style="color: var(--gray-500);">4</span>
+</div>
+
+<!-- PAGE 5: CAROUSEL SLIDES 7-9 + SPECS -->
+<div class="page carousel-page">
+  <div class="section-header">
+    <h2>Facebook Carrousel — Slides 7-9 + Specs</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="carousel-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">7</div>
+        <img src="carousel-07-voice.png" alt="Slide 7 Voice">
+      </div>
+      <div class="carousel-caption">AI Voice Studio</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">8</div>
+        <img src="carousel-08-cta.png" alt="Slide 8 CTA">
+      </div>
+      <div class="carousel-caption">Call To Action</div>
+    </div>
+    <div>
+      <div class="carousel-item">
+        <div class="slide-num">9</div>
+        <img src="carousel-09-melo.png" alt="Slide 9 Melo">
+      </div>
+      <div class="carousel-caption">Melo Assistant</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 30px; padding: 24px; background: var(--dark-3); border-radius: 12px; border: 1px solid rgba(124,58,237,0.3);">
+    <h3 style="font-size: 16px; font-weight: 700; color: var(--purple-300); margin-bottom: 14px;">Specifications Techniques Facebook Carrousel</h3>
+    <table class="spec-table" style="font-size: 11px;">
+      <tr><th style="background: var(--purple-700);">Parametre</th><th style="background: var(--purple-700);">Valeur</th></tr>
+      <tr><td>Resolution image</td><td>1080 x 1080 px (minimum 600 x 600)</td></tr>
+      <tr><td>Format fichier</td><td>JPG ou PNG (PNG pour transparence)</td></tr>
+      <tr><td>Ratio</td><td>1:1 (carre) — 16:9 aussi supporte</td></tr>
+      <tr><td>Nombre de cartes</td><td>Minimum 2, Maximum 10</td></tr>
+      <tr><td>Titre carte</td><td>Max 25 caracteres</td></tr>
+      <tr><td>Description carte</td><td>Max 30 caracteres</td></tr>
+      <tr><td>Poids max/fichier</td><td>30 Mo</td></tr>
+      <tr><td>CTA recommande</td><td>"Commencer" ou "Essayer Gratuitement"</td></tr>
+    </table>
+  </div>
+  <span class="page-number" style="color: var(--gray-500);">5</span>
+</div>
+
+<!-- PAGE 6: USAGE GUIDELINES -->
+<div class="page guide-page">
+  <div class="section-header">
+    <h2>Guide d'Utilisation</h2>
+    <div class="line"></div>
+    <p>Recommandations pour une utilisation efficace du kit media sur les differentes plateformes et supports de communication de Melodia Up To Africa.</p>
+  </div>
+
+  <div class="guide-section">
+    <h3>Facebook Carrousel — Bonnes Pratiques</h3>
+    <ul>
+      <li>Ordre des slides : Hero (1) → Fonctionnalites (2-5) → Pricing (6) → CTA (8). Le slide Melo (9) est ideal pour retargeting</li>
+      <li>Chaque slide doit etre comprehensible independamment — l'utilisateur peut swiper dans les deux sens</li>
+      <li>Le premier slide (Hero) determine si l'utilisateur continue a scroller — investissez le plus d'impact visuel ici</li>
+      <li>Utilisez le CTA "Commencer" pour les campagnes d'acquisition, "En Savoir Plus" pour la notoriete</li>
+      <li>A/B Test : testez 2 sequences differentes de carrousel pour optimiser le taux de conversion</li>
+      <li>Ciblez les pays africains francophones : CI, SN, CM, ML, BF, NE, GN, BJ, TG, CF</li>
+    </ul>
+  </div>
+
+  <div class="guide-section">
+    <h3>Adaptations par Platforme</h3>
+    <table class="spec-table">
+      <tr><th>Platforme</th><th>Format</th><th>Resolution</th><th>Notes</th></tr>
+      <tr><td>Facebook Feed</td><td>Carrousel</td><td>1080 x 1080 px</td><td>Principal — 2 a 10 cartes</td></tr>
+      <tr><td>Instagram Feed</td><td>Carre</td><td>1080 x 1080 px</td><td>1 image a la fois</td></tr>
+      <tr><td>Instagram Story</td><td>Vertical</td><td>1080 x 1920 px</td><td>Recadrer les slides en 9:16</td></tr>
+      <tr><td>TikTok</td><td>Vertical</td><td>1080 x 1920 px</td><td>Utiliser le slide Hero en 9:16</td></tr>
+      <tr><td>Twitter/X</td><td>Paysage</td><td>1200 x 675 px</td><td>Recadrer en 16:9</td></tr>
+      <tr><td>LinkedIn</td><td>Paysage</td><td>1200 x 627 px</td><td>Audience B2B / Labels</td></tr>
+      <tr><td>YouTube</td><td>Thumbnail</td><td>1280 x 720 px</td><td>Slide Hero + texte</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-section">
+    <h3>Copie Recommandee (Français)</h3>
+    <table class="spec-table">
+      <tr><th>Slide</th><th>Titre (max 25 car.)</th><th>Description (max 30 car.)</th></tr>
+      <tr><td>1 - Hero</td><td>MELODIA: Studio AI</td><td>Cree ta musique avec l'IA</td></tr>
+      <tr><td>2 - Lyrics</td><td>AI Lyrics Generator</td><td>Ecris en toute langue</td></tr>
+      <tr><td>3 - Beat Maker</td><td>AI Beat Maker</td><td>Beats pro en secondes</td></tr>
+      <tr><td>4 - Cover Art</td><td>AI Cover Art</td><td>Pochettes stunnautes</td></tr>
+      <tr><td>5 - Video</td><td>AI Music Videos</td><td>Lyrics vers visuals</td></tr>
+      <tr><td>6 - Pricing</td><td>Pay As You Go</td><td>Des 2000 FCFA</td></tr>
+      <tr><td>7 - Voice</td><td>AI Voice Studio</td><td>Clone ta voix</td></tr>
+      <tr><td>8 - CTA</td><td>Commence Now</td><td>Inscription gratuite</td></tr>
+      <tr><td>9 - Melo</td><td>Meet Melo</td><td>Ton assistant AI</td></tr>
+    </table>
+  </div>
+  <span class="page-number">6</span>
+</div>
+
+</body>
+</html>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,7 @@ import {
   CheckCircle2,
   Clock,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -60,7 +63,31 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Admin guard — redirect non-admin users
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session || (session.user as any)?.role !== "admin") {
+      router.replace("/dashboard");
+    }
+  }, [session, status, router]);
+
+  // Loading state while checking auth
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // Not admin — don't render anything (redirect in progress)
+  if (!session || (session.user as any)?.role !== "admin") {
+    return null;
+  }
 
   const stats = [
     { label: "Utilisateurs", value: "1 247", change: "+12%", icon: Users, color: "text-purple-400", bg: "bg-purple-500/10" },

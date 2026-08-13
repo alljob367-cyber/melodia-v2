@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 const handler = NextAuth({
   providers: [
@@ -23,8 +24,17 @@ const handler = NextAuth({
           return null;
         }
 
-        // Simple password check (in production, use bcrypt)
-        if (user.password !== credentials.password) {
+        // Verify password with bcrypt (supports both hashed and legacy plaintext)
+        let passwordValid = false;
+        if (user.password.startsWith("$2a$") || user.password.startsWith("$2b$")) {
+          // Hashed password — use bcrypt.compare
+          passwordValid = await bcrypt.compare(credentials.password, user.password);
+        } else {
+          // Legacy plaintext fallback (for seed data) — remove after migration
+          passwordValid = user.password === credentials.password;
+        }
+
+        if (!passwordValid) {
           return null;
         }
 

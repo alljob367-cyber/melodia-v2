@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 
 const signupSchema = z.object({
-  name: z.string().min(2, "Le nom doit avoir au moins 2 caractères"),
-  email: z.string().email("Email invalide"),
-  password: z.string().min(6, "Le mot de passe doit avoir au moins 6 caractères"),
+  name: z.string().min(2, "Le nom doit avoir au moins 2 caractères").transform(v => v.trim()),
+  email: z.string().email("Email invalide").transform(v => v.toLowerCase().trim()),
+  password: z.string().min(6, "Le mot de passe doit avoir au moins 6 caractères").max(128, "Mot de passe trop long"),
 });
 
 export async function POST(req: NextRequest) {
@@ -25,12 +26,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Hash password with bcrypt (10 salt rounds)
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
     // Create user
     const user = await db.user.create({
       data: {
         name: data.name,
         email: data.email,
-        password: data.password,
+        password: hashedPassword,
         role: "user",
         plan: "decouverte",
       },

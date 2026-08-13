@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET() {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
   try {
     const [totalUsers, totalSongs, totalAIRequests, recentEvents] = await Promise.all([
       db.user.count(),

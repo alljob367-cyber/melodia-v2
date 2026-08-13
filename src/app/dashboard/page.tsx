@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
@@ -27,30 +27,85 @@ import {
   Volume2,
   Film,
   Cloud,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
-// Demo data
-const recentSongs = [
-  { id: "1", title: "Afro Dreams", style: "Afrobeat", duration: "3:24", status: "completed", coverUrl: null, createdAt: "Il y a 2h" },
-  { id: "2", title: "Lumière de Douala", style: "Makossa", duration: "4:01", status: "completed", coverUrl: null, createdAt: "Il y a 5h" },
-  { id: "3", title: "Freedom Song", style: "Amapiano", duration: "2:58", status: "generating", coverUrl: null, createdAt: "Il y a 1j" },
-];
+interface Song {
+  id: string;
+  title: string;
+  style: string;
+  mood: string | null;
+  theme: string | null;
+  status: string;
+  duration: number | null;
+  audioUrl: string | null;
+  coverUrl: string | null;
+  createdAt: string;
+}
 
-const stats = [
-  { label: "Chansons créées", value: "3", icon: Music, color: "text-purple-400", bg: "bg-purple-500/10" },
-  { label: "Pochettes IA", value: "2", icon: Image, color: "text-amber-400", bg: "bg-amber-500/10" },
-  { label: "Téléchargements", value: "7", icon: Download, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  { label: "Partages", value: "4", icon: Share2, color: "text-pink-400", bg: "bg-pink-500/10" },
-];
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "À l'instant";
+  if (diffMins < 60) return `Il y a ${diffMins}min`;
+  if (diffHours < 24) return `Il y a ${diffHours}h`;
+  if (diffDays < 7) return `Il y a ${diffDays}j`;
+  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  const userId = (session?.user as any)?.id as string | undefined;
   const userName = session?.user?.name || "Créateur";
   const userPlan = (session?.user as any)?.plan || "basic";
+
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    fetch(`/api/songs?userId=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.songs) {
+          setSongs(data.songs);
+        }
+      })
+      .catch(() => {
+        // Silently fail on dashboard
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [userId]);
+
+  const recentSongs = songs.slice(0, 5);
+  const completedSongs = songs.filter((s) => s.status === "completed");
+  const songsWithCovers = songs.filter((s) => s.coverUrl);
+
+  const stats = [
+    { label: "Chansons créées", value: String(songs.length), icon: Music, color: "text-purple-400", bg: "bg-purple-500/10" },
+    { label: "Pochettes IA", value: String(songsWithCovers.length), icon: Image, color: "text-amber-400", bg: "bg-amber-500/10" },
+    { label: "Terminées", value: String(completedSongs.length), icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    { label: "En cours", value: String(songs.filter((s) => s.status === "generating").length), icon: Sparkles, color: "text-pink-400", bg: "bg-pink-500/10" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">
@@ -128,56 +183,76 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              <div className="space-y-3">
-                {recentSongs.map((song, i) => (
-                  <motion.div
-                    key={song.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: i * 0.1 }}
-                  >
-                    <Card className="glass p-4 hover:border-purple-500/20 transition-all group">
-                      <div className="flex items-center gap-4">
-                        {/* Cover thumbnail */}
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                          <Music className="w-5 h-5 text-purple-400" />
-                        </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                  <span className="ml-2 text-slate-400 text-sm">Chargement...</span>
+                </div>
+              ) : recentSongs.length === 0 ? (
+                <Card className="glass p-8 text-center">
+                  <Disc className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400 text-sm">Aucune chanson encore</p>
+                  <Link href="/create" className="mt-3 inline-block">
+                    <Button className="btn-gradient text-white font-bold text-xs rounded-xl">
+                      <PlusCircle className="w-3 h-3 mr-1" />
+                      Créer une chanson
+                    </Button>
+                  </Link>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {recentSongs.map((song, i) => (
+                    <motion.div
+                      key={song.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, delay: i * 0.1 }}
+                    >
+                      <Link href={`/song/${song.id}`}>
+                        <Card className="glass p-4 hover:border-purple-500/20 transition-all group">
+                          <div className="flex items-center gap-4">
+                            {/* Cover thumbnail */}
+                            <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                              <Music className="w-5 h-5 text-purple-400" />
+                            </div>
 
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{song.title}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-slate-500">{song.style}</span>
-                            <span className="text-xs text-slate-600">•</span>
-                            <span className="text-xs text-slate-500">{song.duration}</span>
-                            {song.status === "generating" && (
-                              <span className="text-xs text-amber-400 flex items-center gap-1">
-                                <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                Génération...
-                              </span>
-                            )}
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">{song.title}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-slate-500">{song.style}</span>
+                                <span className="text-xs text-slate-600">•</span>
+                                <span className="text-xs text-slate-500">{formatDuration(song.duration)}</span>
+                                {song.status === "generating" && (
+                                  <span className="text-xs text-amber-400 flex items-center gap-1">
+                                    <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                    Génération...
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Time & Actions */}
+                            <span className="text-xs text-slate-500 hidden sm:block">{formatTimeAgo(song.createdAt)}</span>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {song.status === "completed" && (
+                                <>
+                                  <Button variant="ghost" size="icon" className="w-8 h-8 text-slate-400 hover:text-white hover:bg-white/5">
+                                    <Play className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="w-8 h-8 text-slate-400 hover:text-white hover:bg-white/5">
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-
-                        {/* Time & Actions */}
-                        <span className="text-xs text-slate-500 hidden sm:block">{song.createdAt}</span>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {song.status === "completed" && (
-                            <>
-                              <Button variant="ghost" size="icon" className="w-8 h-8 text-slate-400 hover:text-white hover:bg-white/5">
-                                <Play className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="w-8 h-8 text-slate-400 hover:text-white hover:bg-white/5">
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
+                        </Card>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Quick actions & Credits - 2 cols */}
@@ -209,16 +284,16 @@ export default function DashboardPage() {
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-slate-400">Chansons IA</span>
-                      <span className="text-white font-medium">1 / 2</span>
+                      <span className="text-white font-medium">{completedSongs.length} / 2</span>
                     </div>
-                    <Progress value={50} className="h-2 bg-white/5 [&>div]:bg-purple-500" />
+                    <Progress value={Math.min((completedSongs.length / 2) * 100, 100)} className="h-2 bg-white/5 [&>div]:bg-purple-500" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-slate-400">Pochettes IA</span>
-                      <span className="text-white font-medium">1 / 2</span>
+                      <span className="text-white font-medium">{songsWithCovers.length} / 2</span>
                     </div>
-                    <Progress value={50} className="h-2 bg-white/5 [&>div]:bg-amber-400" />
+                    <Progress value={Math.min((songsWithCovers.length / 2) * 100, 100)} className="h-2 bg-white/5 [&>div]:bg-amber-400" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1.5">

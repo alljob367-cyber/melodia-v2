@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { Card } from "@/components/ui/card";
@@ -236,8 +237,22 @@ function GeneratingStep({ progress, status }: { progress: number; status: string
   );
 }
 
-function ResultStep({ songTitle, style }: { songTitle: string; style: string }) {
+function ResultStep({ songTitle, style, songId }: { songTitle: string; style: string; songId: string }) {
   const router = useRouter();
+
+  const handlePlay = () => {
+    toast.success("Lecture en cours...");
+  };
+
+  const handleDownload = () => {
+    toast.info("Téléchargement en préparation...");
+  };
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/song/${songId}`;
+    navigator.clipboard?.writeText(url);
+    toast.success("Lien copié dans le presse-papier !");
+  };
 
   return (
     <div className="space-y-6">
@@ -267,7 +282,7 @@ function ResultStep({ songTitle, style }: { songTitle: string; style: string }) 
 
         {/* Player */}
         <div className="bg-white/5 rounded-lg p-3 flex items-center gap-3 mb-4">
-          <Button size="icon" className="w-10 h-10 rounded-full btn-gradient text-white flex-shrink-0">
+          <Button size="icon" className="w-10 h-10 rounded-full btn-gradient text-white flex-shrink-0" onClick={handlePlay}>
             <Play className="w-4 h-4" />
           </Button>
           <div className="flex-1">
@@ -283,15 +298,15 @@ function ResultStep({ songTitle, style }: { songTitle: string; style: string }) 
 
         {/* Actions */}
         <div className="grid grid-cols-3 gap-2">
-          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 flex-col gap-1 h-auto py-3">
+          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 flex-col gap-1 h-auto py-3" onClick={handleDownload}>
             <Download className="w-4 h-4" />
             <span className="text-[10px]">Télécharger</span>
           </Button>
-          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 flex-col gap-1 h-auto py-3">
+          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 flex-col gap-1 h-auto py-3" onClick={handleShare}>
             <Share2 className="w-4 h-4" />
             <span className="text-[10px]">Partager</span>
           </Button>
-          <Button variant="ghost" className="text-slate-400 hover:text-pink-400 hover:bg-pink-500/5 flex-col gap-1 h-auto py-3">
+          <Button variant="ghost" className="text-slate-400 hover:text-pink-400 hover:bg-pink-500/5 flex-col gap-1 h-auto py-3" onClick={() => toast.success("Ajouté aux favoris ! ❤️")}>
             <Heart className="w-4 h-4" />
             <span className="text-[10px]">Favoris</span>
           </Button>
@@ -302,9 +317,9 @@ function ResultStep({ songTitle, style }: { songTitle: string; style: string }) 
         <Button
           variant="outline"
           className="border-white/10 text-white hover:bg-white/5"
-          onClick={() => router.push("/creations")}
+          onClick={() => router.push(`/song/${songId}`)}
         >
-          Voir mes créations
+          Voir ma chanson
         </Button>
         <Button
           className="btn-gradient text-white font-bold"
@@ -321,6 +336,7 @@ function ResultStep({ songTitle, style }: { songTitle: string; style: string }) 
 // ===== MAIN CREATE PAGE =====
 export default function CreatePage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [step, setStep] = useState(0);
   const [style, setStyle] = useState("");
@@ -331,6 +347,12 @@ export default function CreatePage() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
+  const [songId, setSongId] = useState<string | null>(null);
+  const abortRef = useRef(false);
+
+  const userId = (session?.user as any)?.id as string | undefined;
+  const userName = session?.user?.name || "Créateur";
+  const userPlan = (session?.user as any)?.plan || "basic";
 
   const steps = ["Style", "Thème", "Ambiance", "Détails", "Générer"];
 
@@ -348,38 +370,86 @@ export default function CreatePage() {
     if (step < 3) {
       setStep(step + 1);
     } else if (step === 3) {
+      if (!userId) {
+        toast.error("Tu dois être connecté pour générer une chanson");
+        return;
+      }
+
       // Start generation
       setStep(4);
       setGenerating(true);
       setProgress(0);
       setStatusText("Analyse de ta demande...");
+      abortRef.current = false;
 
-      // Simulate generation
+      // Show progress stages while the API call is in flight
       const stages = [
         { p: 15, text: "Analyse de ta demande...", delay: 800 },
         { p: 30, text: "Génération des paroles...", delay: 1500 },
         { p: 50, text: "Composition musicale...", delay: 2000 },
         { p: 70, text: "Synthèse vocale IA...", delay: 1500 },
         { p: 85, text: "Création de la pochette...", delay: 1000 },
-        { p: 95, text: "Finalisation de l'audio...", delay: 800 },
-        { p: 100, text: "Ta chanson est prête !", delay: 500 },
       ];
 
       let elapsed = 0;
       stages.forEach((stage) => {
         elapsed += stage.delay;
         setTimeout(() => {
-          setProgress(stage.p);
-          setStatusText(stage.text);
-          if (stage.p === 100) {
-            setTimeout(() => {
-              setGenerating(false);
-              setStep(5);
-              toast.success("Ta chanson est prête ! 🎵");
-            }, 500);
+          if (!abortRef.current) {
+            setProgress(stage.p);
+            setStatusText(stage.text);
           }
         }, elapsed);
       });
+
+      // Call the real API
+      fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          style,
+          theme,
+          mood,
+          title,
+          language: "fr",
+          additionalPrompt,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (abortRef.current) return;
+
+          if (data.error) {
+            toast.error(data.error);
+            setStep(3);
+            setGenerating(false);
+            return;
+          }
+
+          setProgress(95);
+          setStatusText("Finalisation de l'audio...");
+
+          setTimeout(() => {
+            if (abortRef.current) return;
+            setProgress(100);
+            setStatusText("Ta chanson est prête !");
+
+            setTimeout(() => {
+              if (abortRef.current) return;
+              setGenerating(false);
+              setSongId(data.song.id);
+              setStep(5);
+              toast.success("Ta chanson est prête ! 🎵");
+            }, 500);
+          }, 800);
+        })
+        .catch(() => {
+          if (abortRef.current) return;
+          toast.error("Erreur lors de la génération. Réessaie.");
+          setStep(3);
+          setGenerating(false);
+        });
     }
   };
 
@@ -392,13 +462,13 @@ export default function CreatePage() {
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        userPlan="basic"
+        userPlan={userPlan}
         songsRemaining={2}
         songsTotal={2}
       />
 
       <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
-        <Header title="Créer une chanson" userName="Jean Paul" userPlan="basic" />
+        <Header title="Créer une chanson" userName={userName} userPlan={userPlan} />
 
         <div className="p-6 max-w-4xl mx-auto">
           {/* Progress steps */}
@@ -452,10 +522,11 @@ export default function CreatePage() {
                 />
               )}
               {step === 4 && <GeneratingStep progress={progress} status={statusText} />}
-              {step === 5 && (
+              {step === 5 && songId && (
                 <ResultStep
                   songTitle={title}
                   style={musicStyles.find(s => s.id === style)?.name || style}
+                  songId={songId}
                 />
               )}
             </motion.div>

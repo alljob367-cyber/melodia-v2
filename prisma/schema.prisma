@@ -74,10 +74,14 @@ model VerificationToken {
 model UserCredits {
   id              String   @id @default(cuid())
   userId          String   @unique
-  songsRemaining  Int      @default(2)
-  coversRemaining Int      @default(2)
+  credits         Int      @default(20)    // Unified credit balance (1 credit = ~10 FCFA)
+  songsRemaining  Int      @default(3)
+  coversRemaining Int      @default(3)
+  videosRemaining Int      @default(0)     // Controlled separately (expensive)
   totalSongsUsed  Int      @default(0)
   totalCoversUsed Int      @default(0)
+  totalVideosUsed Int      @default(0)
+  totalCreditsUsed Int     @default(0)
   storageUsedMb   Float    @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -101,15 +105,17 @@ model CreditTransaction {
 }
 
 model CreditPack {
-  id          String   @id @default(cuid())
-  name        String
-  plan        String   // basic, pro, studio
-  price       Int      // in FCFA
-  songsLimit  Int
-  coversLimit Int
-  features    String   // JSON string of features
-  isPopular   Boolean  @default(false)
-  sortOrder   Int      @default(0)
+  id            String   @id @default(cuid())
+  name          String
+  plan          String   // decouverte, production, artiste, video, professionnel, label
+  price         Int      // in FCFA
+  credits       Int      // Credit units included
+  songsLimit    Int
+  coversLimit   Int
+  videosLimit   Int      @default(0)
+  features      String   // JSON string of features
+  isPopular     Boolean  @default(false)
+  sortOrder     Int      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

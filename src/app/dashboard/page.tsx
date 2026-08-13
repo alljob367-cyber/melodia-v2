@@ -7,6 +7,7 @@ import { Header } from "@/components/dashboard/header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   Music,
   PlusCircle,
@@ -28,6 +29,11 @@ import {
   Film,
   Cloud,
   Loader2,
+  PenTool,
+  Palette,
+  Clapperboard,
+  Rocket,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -44,6 +50,17 @@ interface Song {
   audioUrl: string | null;
   coverUrl: string | null;
   createdAt: string;
+}
+
+interface UserCredits {
+  credits: number;
+  songsRemaining: number;
+  coversRemaining: number;
+  videosRemaining: number;
+  totalSongsUsed: number;
+  totalCoversUsed: number;
+  totalVideosUsed: number;
+  totalCreditsUsed: number;
 }
 
 function formatDuration(seconds: number | null): string {
@@ -68,32 +85,49 @@ function formatTimeAgo(dateStr: string): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
+const planNames: Record<string, string> = {
+  decouverte: "Découverte",
+  production: "Production",
+  artiste: "Artiste Actif",
+  video: "Vidéo",
+  professionnel: "Professionnel",
+  label: "Label / Studio",
+  basic: "Basic",
+  pro: "Pro",
+  studio: "Studio",
+};
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
+  const [credits, setCredits] = useState<UserCredits | null>(null);
   const [loading, setLoading] = useState(true);
 
   const userId = (session?.user as any)?.id as string | undefined;
   const userName = session?.user?.name || "Créateur";
-  const userPlan = (session?.user as any)?.plan || "basic";
+  const userPlan = (session?.user as any)?.plan || "decouverte";
 
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
+
+    // Fetch songs
     fetch(`/api/songs?userId=${userId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.songs) {
-          setSongs(data.songs);
-        }
+        if (data.songs) setSongs(data.songs);
       })
-      .catch(() => {
-        // Silently fail on dashboard
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    // Fetch credits
+    fetch(`/api/me/credits?userId=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.credits) setCredits(data.credits);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch(() => {});
   }, [userId]);
 
   const recentSongs = songs.slice(0, 5);
@@ -102,9 +136,9 @@ export default function DashboardPage() {
 
   const stats = [
     { label: "Chansons créées", value: String(songs.length), icon: Music, color: "text-purple-400", bg: "bg-purple-500/10" },
-    { label: "Pochettes IA", value: String(songsWithCovers.length), icon: Image, color: "text-amber-400", bg: "bg-amber-500/10" },
+    { label: "Pochettes IA", value: String(songsWithCovers.length), icon: Palette, color: "text-amber-400", bg: "bg-amber-500/10" },
     { label: "Terminées", value: String(completedSongs.length), icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-    { label: "En cours", value: String(songs.filter((s) => s.status === "generating").length), icon: Sparkles, color: "text-pink-400", bg: "bg-pink-500/10" },
+    { label: "Crédits", value: String(credits?.credits || 0), icon: Wallet, color: "text-pink-400", bg: "bg-pink-500/10" },
   ];
 
   return (
@@ -113,14 +147,12 @@ export default function DashboardPage() {
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         userPlan={userPlan}
-        songsRemaining={2}
-        songsTotal={2}
+        songsRemaining={credits?.songsRemaining || 3}
+        songsTotal={credits?.songsRemaining || 3}
       />
 
-      <main
-        className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}
-      >
-        <Header title="Tableau de bord" userName={userName} userPlan={userPlan} />
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+        <Header title="Studio" userName={userName} userPlan={userPlan} />
 
         <div className="p-6 space-y-6">
           {/* Welcome banner */}
@@ -130,20 +162,26 @@ export default function DashboardPage() {
             transition={{ duration: 0.5 }}
           >
             <Card className="glass p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/5 rounded-full blur-[60px]" />
+              <div className="absolute top-0 right-0 w-60 h-60 bg-purple-500/5 rounded-full blur-[80px]" />
+              <div className="absolute bottom-0 left-1/2 w-40 h-40 bg-pink-500/5 rounded-full blur-[60px]" />
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-1">
-                    Bienvenue, {userName} ! 👋
-                  </h2>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-2xl font-bold text-white">
+                      Bienvenue, {userName} ! 👋
+                    </h2>
+                    <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 text-[10px]">
+                      {planNames[userPlan] || userPlan}
+                    </Badge>
+                  </div>
                   <p className="text-slate-400 text-sm">
-                    Tu as <span className="text-purple-400 font-semibold">2 créations restantes</span> sur ton pack Basic. Continue à créer !
+                    Tu as <span className="text-purple-400 font-semibold">{credits?.songsRemaining || 0} chansons restantes</span> et <span className="text-pink-400 font-semibold">{credits?.credits || 0} crédits</span>. L&apos;IA est prée à créer !
                   </p>
                 </div>
                 <Link href="/create">
-                  <Button className="btn-gradient text-white font-bold rounded-xl shadow-lg shadow-purple-500/25 hover:scale-105 transition-transform">
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Créer une chanson
+                  <Button className="btn-gradient text-white font-bold rounded-xl shadow-lg shadow-purple-500/25 hover:scale-105 transition-transform px-6">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Studio IA
                   </Button>
                 </Link>
               </div>
@@ -172,6 +210,39 @@ export default function DashboardPage() {
             ))}
           </div>
 
+          {/* Studio Quick Actions */}
+          <div>
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-purple-400" />
+              Studio rapide
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[
+                { icon: PenTool, label: "Paroles IA", desc: "Écrire des paroles", href: "/create", color: "text-pink-400", bg: "bg-pink-500/10" },
+                { icon: Music, label: "Chanson complète", desc: "Paroles + Audio + Pochette", href: "/create", color: "text-purple-400", bg: "bg-purple-500/10" },
+                { icon: Mic, label: "Voix & Audio", desc: "Synthèse vocale IA", href: "/create", color: "text-amber-400", bg: "bg-amber-500/10" },
+                { icon: Palette, label: "Pochette IA", desc: "Design album", href: "/create", color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                { icon: Clapperboard, label: "Clip vidéo", desc: "Vidéo musicale IA", href: "/create", color: "text-blue-400", bg: "bg-blue-500/10" },
+                { icon: Volume2, label: "Mix & Master", desc: "Finaliser l'audio", href: "/create", color: "text-red-400", bg: "bg-red-500/10" },
+              ].map((action, i) => (
+                <Link key={i} href={action.href}>
+                  <motion.div
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Card className="glass p-4 hover:border-purple-500/20 transition-all text-center group cursor-pointer">
+                      <div className={`w-12 h-12 rounded-xl ${action.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+                        <action.icon className={`w-6 h-6 ${action.color}`} />
+                      </div>
+                      <p className="text-sm font-medium text-white">{action.label}</p>
+                      <p className="text-[10px] text-slate-500 mt-1">{action.desc}</p>
+                    </Card>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           {/* Two column layout */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Recent songs - 3 cols */}
@@ -191,11 +262,12 @@ export default function DashboardPage() {
               ) : recentSongs.length === 0 ? (
                 <Card className="glass p-8 text-center">
                   <Disc className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400 text-sm">Aucune chanson encore</p>
-                  <Link href="/create" className="mt-3 inline-block">
-                    <Button className="btn-gradient text-white font-bold text-xs rounded-xl">
-                      <PlusCircle className="w-3 h-3 mr-1" />
-                      Créer une chanson
+                  <p className="text-slate-400 mb-2">Aucune chanson encore</p>
+                  <p className="text-slate-500 text-xs mb-4">Lance le studio IA pour créer ton premier hit</p>
+                  <Link href="/create" className="inline-block">
+                    <Button className="btn-gradient text-white font-bold rounded-xl">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Créer ma première chanson
                     </Button>
                   </Link>
                 </Card>
@@ -212,8 +284,14 @@ export default function DashboardPage() {
                         <Card className="glass p-4 hover:border-purple-500/20 transition-all group">
                           <div className="flex items-center gap-4">
                             {/* Cover thumbnail */}
-                            <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                              <Music className="w-5 h-5 text-purple-400" />
+                            <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden">
+                              {song.coverUrl && !song.coverUrl.startsWith("/covers/") ? (
+                                <img src={song.coverUrl} alt={song.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                                  <Music className="w-6 h-6 text-purple-400" />
+                                </div>
+                              )}
                             </div>
 
                             {/* Info */}
@@ -223,11 +301,14 @@ export default function DashboardPage() {
                                 <span className="text-xs text-slate-500">{song.style}</span>
                                 <span className="text-xs text-slate-600">•</span>
                                 <span className="text-xs text-slate-500">{formatDuration(song.duration)}</span>
+                                {song.status === "completed" && (
+                                  <Badge variant="outline" className="text-[9px] border-emerald-500/20 text-emerald-400 px-1.5 py-0">Prête</Badge>
+                                )}
                                 {song.status === "generating" && (
-                                  <span className="text-xs text-amber-400 flex items-center gap-1">
-                                    <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                    Génération...
-                                  </span>
+                                  <Badge variant="outline" className="text-[9px] border-amber-500/20 text-amber-400 px-1.5 py-0">
+                                    <Loader2 className="w-2.5 h-2.5 mr-0.5 animate-spin" />
+                                    En cours
+                                  </Badge>
                                 )}
                               </div>
                             </div>
@@ -255,71 +336,80 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Quick actions & Credits - 2 cols */}
+            {/* Credits & Upgrade - 2 cols */}
             <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-lg font-bold text-white">Actions rapides</h3>
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { icon: Music, label: "Nouvelle chanson", href: "/create", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-                  { icon: Mic, label: "Paroles IA", href: "/create?tab=lyrics", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
-                  { icon: Image, label: "Pochette IA", href: "/create?tab=cover", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-                  { icon: Video, label: "Clip vidéo", href: "/create?tab=video", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href}>
-                    <Card className={`glass p-4 hover:${action.border} transition-all text-center group cursor-pointer`}>
-                      <div className={`w-10 h-10 rounded-xl ${action.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
-                        <action.icon className={`w-5 h-5 ${action.color}`} />
-                      </div>
-                      <p className="text-xs font-medium text-slate-300">{action.label}</p>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-
               {/* Credit usage */}
-              <Card className="glass p-5 mt-4">
-                <h4 className="text-sm font-semibold text-white mb-4">Utilisation du mois</h4>
+              <Card className="glass p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-purple-400" />
+                    Crédits & Utilisation
+                  </h4>
+                  <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/5 text-[10px]">
+                    {credits?.credits || 0} cr.
+                  </Badge>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-slate-400">Chansons IA</span>
-                      <span className="text-white font-medium">{completedSongs.length} / 2</span>
+                      <span className="text-white font-medium">{credits?.totalSongsUsed || 0} / {credits?.songsRemaining ? (credits.songsRemaining + (credits.totalSongsUsed || 0)) : "∞"}</span>
                     </div>
-                    <Progress value={Math.min((completedSongs.length / 2) * 100, 100)} className="h-2 bg-white/5 [&>div]:bg-purple-500" />
+                    <Progress
+                      value={credits ? Math.min(((credits.totalSongsUsed || 0) / ((credits.songsRemaining || 0) + (credits.totalSongsUsed || 0) || 1)) * 100, 100) : 0}
+                      className="h-2 bg-white/5 [&>div]:bg-purple-500"
+                    />
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-slate-400">Pochettes IA</span>
-                      <span className="text-white font-medium">{songsWithCovers.length} / 2</span>
+                      <span className="text-white font-medium">{credits?.totalCoversUsed || 0} / {credits?.coversRemaining ? (credits.coversRemaining + (credits.totalCoversUsed || 0)) : "∞"}</span>
                     </div>
-                    <Progress value={Math.min((songsWithCovers.length / 2) * 100, 100)} className="h-2 bg-white/5 [&>div]:bg-amber-400" />
+                    <Progress
+                      value={credits ? Math.min(((credits.totalCoversUsed || 0) / ((credits.coversRemaining || 0) + (credits.totalCoversUsed || 0) || 1)) * 100, 100) : 0}
+                      className="h-2 bg-white/5 [&>div]:bg-amber-400"
+                    />
                   </div>
+                  {credits && credits.videosRemaining > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="text-slate-400">Clips vidéo</span>
+                        <span className="text-white font-medium">{credits.totalVideosUsed || 0} / {(credits.videosRemaining || 0) + (credits.totalVideosUsed || 0)}</span>
+                      </div>
+                      <Progress
+                        value={Math.min(((credits.totalVideosUsed || 0) / ((credits.videosRemaining || 0) + (credits.totalVideosUsed || 0) || 1)) * 100, 100)}
+                        className="h-2 bg-white/5 [&>div]:bg-emerald-500"
+                      />
+                    </div>
+                  )}
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-slate-400">Stockage</span>
-                      <span className="text-white font-medium">12 Mo / 1 Go</span>
+                      <span className="text-white font-medium">{credits?.totalCreditsUsed || 0} cr. utilisés</span>
                     </div>
-                    <Progress value={1} className="h-2 bg-white/5 [&>div]:bg-emerald-500" />
+                    <Progress value={credits ? Math.min(((credits.totalCreditsUsed || 0) / (credits.credits + (credits.totalCreditsUsed || 0) || 1)) * 100, 100) : 0} className="h-2 bg-white/5 [&>div]:bg-pink-500" />
                   </div>
                 </div>
               </Card>
 
               {/* Upgrade prompt */}
-              <Card className="glass p-5 border-purple-500/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <Crown className="w-5 h-5 text-amber-400" />
-                  <h4 className="text-sm font-semibold text-white">Passe à PRO</h4>
+              <Card className="glass p-5 border-purple-500/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full blur-[40px]" />
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Crown className="w-5 h-5 text-amber-400" />
+                    <h4 className="text-sm font-semibold text-white">Passe au plan supérieur</h4>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4">
+                    Plus de chansons, clips vidéo, et modèles IA exclusifs.
+                  </p>
+                  <Link href="/subscription">
+                    <Button className="w-full btn-gradient text-white font-bold text-xs py-2.5 rounded-lg">
+                      Voir les 6 plans
+                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Button>
+                  </Link>
                 </div>
-                <p className="text-xs text-slate-400 mb-4">
-                  Débloque 20 chansons/mois, voix IA, clips vidéo et plus.
-                </p>
-                <Link href="/subscription">
-                  <Button className="w-full btn-gradient text-white font-bold text-xs py-2.5 rounded-lg">
-                    Voir les plans
-                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                  </Button>
-                </Link>
               </Card>
             </div>
           </div>

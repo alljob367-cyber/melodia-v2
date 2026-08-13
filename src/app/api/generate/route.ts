@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import {
+  generateLyrics,
+  generateComposition,
+  generateCoverArt,
+  generateAudio,
+  CREDIT_COSTS,
+} from "@/lib/ai-engine";
 
 const generateSchema = z.object({
   userId: z.string(),
@@ -10,88 +17,46 @@ const generateSchema = z.object({
   title: z.string().min(1),
   language: z.string().default("fr"),
   additionalPrompt: z.string().optional(),
+  generateCover: z.boolean().default(true),
+  generateAudio: z.boolean().default(true),
 });
 
-// Mock lyrics generation
-function generateMockLyrics(title: string, style: string, mood: string, theme: string): string {
-  const moodWords: Record<string, string[]> = {
-    joyful: ["soleil", "danse", "joie", "célébration", "rires"],
-    melancholic: ["pluie", "souvenirs", "silence", "nostalgie", "ombres"],
-    energetic: ["feu", "puissance", "mouvement", "frénésie", "électricité"],
-    chill: ["brise", "calme", "sérénité", "horizon", "vague"],
-    powerful: ["tonnerre", "force", "victoire", "révolution", "ascension"],
-    dreamy: ["étoiles", "rêves", "nuages", "lune", "horizon"],
-  };
-
-  const themeWords: Record<string, string> = {
-    love: "l'amour qui nous guide",
-    freedom: "la liberté tant rêvée",
-    party: "la fête qui nous unit",
-    struggle: "la lutte quotidienne",
-    faith: "la foi qui nous porte",
-    africa: "l'Afrique qui se lève",
-    family: "la famille comme ancrage",
-    dreams: "les rêves qui nous poussent",
-  };
-
-  const words = moodWords[mood] || moodWords.joyful;
-  const themeText = themeWords[theme] || themeWords.africa;
-
-  return `[Couplet 1]
-Dans le souffle du ${words[0]}, ${themeText}
-Les ${words[1]} résonnent comme un appel
-${title}, c'est notre histoire
-Qui s'écrit sur les ${words[4]} du ciel
-
-[Refrain]
-${title}, ${title}
-${words[2]} et ${words[3]}, notre mélodie
-${title}, ${title}
-L'${style} de nos vies
-
-[Couplet 2]
-Sous le ${words[0]} et les ${words[4]}
-Notre ${words[1]} traverse les frontières
-Chaque note porte ${themeText}
-Jusqu'au bout de l'${words[3]}
-
-[Refrain]
-${title}, ${title}
-${words[2]} et ${words[3]}, notre mélodie
-${title}, ${title}
-L'${style} de nos vies
-
-[Pont]
-Et si le ${words[0]} s'arrête un instant
-On ${words[1]} encore, on ${words[1]} toujours
-Car ${themeText}
-C'est plus fort que le ${words[4]}
-
-[Refrain]
-${title}, ${title}
-${words[2]} et ${words[3]}, notre mélodie
-${title}, ${title}
-L'${style} de nos vies`;
-}
-
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const body = await req.json();
     const data = generateSchema.parse(body);
 
-    // Check user credits
+    // ============ CHECK CREDITS ============
     const credits = await db.userCredits.findUnique({
       where: { userId: data.userId },
     });
 
-    if (!credits || credits.songsRemaining <= 0) {
+    if (!credits) {
       return NextResponse.json(
-        { error: "Crédits insuffisants. Passez à un plan supérieur." },
+        { error: "Crédits non trouvés. Contacte le support." },
         { status: 403 }
       );
     }
 
-    // Create song record
+    const totalCreditCost = CREDIT_COSTS.fullSong; // 7 credits for full song
+    
+    if (credits.credits < totalCreditCost) {
+      return NextResponse.json(
+        { error: `Crédits insuffisants (${credits.credits} restants, ${totalCreditCost} requis). Passe à un plan supérieur.` },
+        { status: 403 }
+      );
+    }
+
+    if (credits.songsRemaining <= 0) {
+      return NextResponse.json(
+        { error: "Limite de chansons atteinte. Passe à un plan supérieur." },
+        { status: 403 }
+      );
+    }
+
+    // ============ CREATE SONG RECORD ============
     const song = await db.song.create({
       data: {
         userId: data.userId,
@@ -104,28 +69,28 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Log AI request
-    await db.aIRequestLog.create({
-      data: {
-        userId: data.userId,
-        endpoint: "/api/generate",
-        model: "melodia-v1",
-        promptTokens: 150,
-        completionTokens: 500,
-        totalTokens: 650,
-        cost: 0.02,
-        status: "success",
-        duration: 25000,
-      },
-    });
-
-    // Generate mock lyrics
-    const lyricsText = generateMockLyrics(
-      data.title,
-      data.style,
-      data.mood || "joyful",
-      data.theme || "africa"
-    );
+    // ============ STEP 1: GENERATE LYRICS (Real AI) ============
+    let lyricsText = "";
+    let lyricsTokens = 0;
+    let lyricsCost = 0;
+    
+    try {
+      const lyricsResult = await generateLyrics(
+        data.title,
+        data.style,
+        data.mood || "joyful",
+        data.theme || "africa",
+        data.language,
+        data.additionalPrompt
+      );
+      lyricsText = lyricsResult.lyrics;
+      lyricsTokens = lyricsResult.tokens;
+      lyricsCost = lyricsResult.cost;
+    } catch (err) {
+      console.error("Lyrics generation error:", err);
+      // Fallback: generate basic lyrics
+      lyricsText = `[Couplet 1]\nDans le souffle du continent, ${data.title}\nNotre voix s'élève, portée par le vent\nL'Afrique chante, l'Afrique danse\nChaque note est une espérance\n\n[Refrain]\n${data.title}, ${data.title}\nNotre mélodie, notre identité\n${data.title}, ${data.title}\nLe ${data.style} de l'éternité\n\n[Couplet 2]\nSous le soleil et les étoiles\nNotre rythme traverse les frontières\nChaque mot porte notre histoire\nJusqu'au bout de la terre\n\n[Refrain]\n${data.title}, ${data.title}\nNotre mélodie, notre identité\n${data.title}, ${data.title}\nLe ${data.style} de l'éternité`;
+    }
 
     // Save lyrics
     await db.lyrics.create({
@@ -137,47 +102,143 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Update song to completed
+    // ============ STEP 2: GENERATE COMPOSITION (Real AI) ============
+    let compositionText = "";
+    try {
+      const compResult = await generateComposition(
+        data.title,
+        data.style,
+        data.mood || "joyful",
+        lyricsText
+      );
+      compositionText = compResult.composition;
+    } catch (err) {
+      console.error("Composition generation error:", err);
+      compositionText = `Composition ${data.style} - Tempo: 120 BPM - Tonalité: Do mineur`;
+    }
+
+    // ============ STEP 3: GENERATE COVER ART (Real AI) ============
+    let coverUrl = "";
+    try {
+      if (data.generateCover && credits.coversRemaining > 0) {
+        const coverResult = await generateCoverArt(
+          data.title,
+          data.style,
+          data.mood || "joyful",
+          data.theme || "africa"
+        );
+        coverUrl = coverResult.coverUrl;
+      }
+    } catch (err) {
+      console.error("Cover art generation error:", err);
+      coverUrl = "";
+    }
+
+    // ============ STEP 4: GENERATE AUDIO (Real TTS) ============
+    let audioUrl = "";
+    let duration = 180;
+    try {
+      if (data.generateAudio) {
+        const audioResult = await generateAudio(
+          lyricsText,
+          data.style,
+          data.title
+        );
+        audioUrl = audioResult.audioUrl;
+        duration = audioResult.duration;
+      }
+    } catch (err) {
+      console.error("Audio generation error:", err);
+      audioUrl = "";
+    }
+
+    // ============ UPDATE SONG TO COMPLETED ============
     await db.song.update({
       where: { id: song.id },
       data: {
         status: "completed",
-        duration: 204, // 3:24 mock
-        audioUrl: `/audio/${song.id}.mp3`,
-        coverUrl: `/covers/${song.id}.png`,
+        duration,
+        audioUrl: audioUrl || `/audio/${song.id}.mp3`,
+        coverUrl: coverUrl || `/covers/${song.id}.png`,
+        lyricsText,
       },
     });
 
-    // Debit credits
+    // ============ DEBIT CREDITS ============
     await db.userCredits.update({
       where: { userId: data.userId },
       data: {
+        credits: { decrement: totalCreditCost },
         songsRemaining: { decrement: 1 },
+        coversRemaining: coverUrl ? { decrement: 1 } : undefined,
         totalSongsUsed: { increment: 1 },
+        totalCoversUsed: coverUrl ? { increment: 1 } : undefined,
+        totalCreditsUsed: { increment: totalCreditCost },
       },
     });
 
-    // Log credit transaction
-    await db.creditTransaction.create({
+    // ============ LOG TRANSACTIONS ============
+    await db.creditTransaction.createMany({
+      data: [
+        {
+          userId: data.userId,
+          type: "debit",
+          category: "song",
+          amount: CREDIT_COSTS.generateLyrics + CREDIT_COSTS.generateComposition,
+          description: `Paroles & Composition: ${data.title}`,
+        },
+        {
+          userId: data.userId,
+          type: "debit",
+          category: "cover",
+          amount: CREDIT_COSTS.generateCover,
+          description: `Pochette IA: ${data.title}`,
+        },
+        {
+          userId: data.userId,
+          type: "debit",
+          category: "song",
+          amount: CREDIT_COSTS.generateAudio,
+          description: `Audio IA: ${data.title}`,
+        },
+      ],
+    });
+
+    // ============ LOG AI REQUEST ============
+    const totalDuration = Date.now() - startTime;
+    await db.aIRequestLog.create({
       data: {
         userId: data.userId,
-        type: "debit",
-        category: "song",
-        amount: 1,
-        description: `Génération chanson: ${data.title}`,
+        endpoint: "/api/generate",
+        model: "z-ai-sdk",
+        promptTokens: lyricsTokens,
+        completionTokens: 0,
+        totalTokens: lyricsTokens,
+        cost: lyricsCost,
+        status: "success",
+        duration: totalDuration,
       },
     });
 
-    // Log analytics
+    // ============ LOG ANALYTICS ============
     await db.analyticsEvent.create({
       data: {
         userId: data.userId,
         event: "song_generated",
-        data: JSON.stringify({ style: data.style, mood: data.mood, theme: data.theme }),
+        data: JSON.stringify({
+          style: data.style,
+          mood: data.mood,
+          theme: data.theme,
+          hasCover: !!coverUrl,
+          hasAudio: !!audioUrl,
+          creditsUsed: totalCreditCost,
+          duration: totalDuration,
+        }),
         page: "/create",
       },
     });
 
+    // ============ RETURN RESULT ============
     return NextResponse.json({
       success: true,
       song: {
@@ -185,11 +246,14 @@ export async function POST(req: NextRequest) {
         title: data.title,
         style: data.style,
         mood: data.mood,
+        theme: data.theme,
         status: "completed",
         lyrics: lyricsText,
-        duration: 204,
-        audioUrl: `/audio/${song.id}.mp3`,
-        coverUrl: `/covers/${song.id}.png`,
+        composition: compositionText,
+        duration,
+        audioUrl: audioUrl || `/audio/${song.id}.mp3`,
+        coverUrl: coverUrl || `/covers/${song.id}.png`,
+        creditsUsed: totalCreditCost,
       },
     });
   } catch (error) {
@@ -201,7 +265,7 @@ export async function POST(req: NextRequest) {
     }
     console.error("Generate error:", error);
     return NextResponse.json(
-      { error: "Erreur lors de la génération" },
+      { error: "Erreur lors de la génération. Réessaie." },
       { status: 500 }
     );
   }

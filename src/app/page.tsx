@@ -42,6 +42,13 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  PenTool,
+  Layers,
+  Clapperboard,
+  Disc3,
+  Radio,
+  Users,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -155,7 +162,7 @@ function Header() {
         redirect: false,
       });
       if (result?.ok) {
-        toast.success("Bienvenue dans MELODIA ! 🎵");
+        toast.success("Bienvenue dans Melodia Up To Africa ! 🎵");
         setSignupOpen(false);
         setTimeout(() => { window.location.href = "/dashboard"; }, 500);
       } else {
@@ -194,19 +201,19 @@ function Header() {
               <Music2 className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-white font-bold text-lg tracking-wide">MELODIA</span>
-              <span className="text-[10px] text-purple-400 font-medium tracking-wider uppercase">UP TO AFRICA</span>
+              <span className="text-white font-bold text-base tracking-wide">MELODIA</span>
+              <span className="text-[9px] text-purple-400 font-semibold tracking-wider uppercase">UP TO AFRICA</span>
             </div>
           </a>
 
           {/* Nav */}
           <nav className="hidden lg:flex items-center gap-6">
             <a href="#accueil" className="text-sm text-zinc-400 hover:text-white transition-colors">Accueil</a>
+            <a href="#pipeline" className="text-sm text-zinc-400 hover:text-white transition-colors">Pipeline</a>
             <a href="#fonctionnalites" className="text-sm text-zinc-400 hover:text-white transition-colors">Fonctionnalités</a>
             <a href="#tarifs" className="text-sm text-zinc-400 hover:text-white transition-colors">Tarifs</a>
             <a href="#a-propos" className="text-sm text-zinc-400 hover:text-white transition-colors">À propos</a>
             <a href="#faq" className="text-sm text-zinc-400 hover:text-white transition-colors">FAQ</a>
-            <a href="#blog" className="text-sm text-zinc-400 hover:text-white transition-colors">Blog</a>
           </nav>
 
           {/* Right */}
@@ -272,7 +279,7 @@ function Header() {
                   <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle className="text-white text-xl">Se connecter</DialogTitle>
-                      <DialogDescription className="text-zinc-400">Accédez à ton compte Melodia</DialogDescription>
+                      <DialogDescription className="text-zinc-400">Accédez à ton compte Melodia Up To Africa</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleLogin} className="space-y-4 pt-4">
                       <div className="space-y-2">
@@ -460,34 +467,33 @@ function HeroSection() {
           <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-8">
             {/* Badge */}
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
-              <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">NOUVEAU</span>
-              <span className="text-sm text-zinc-300">L&apos;IA qui comprend la vibe</span>
+              <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">AFRICA</span>
+              <span className="text-sm text-zinc-300">Le studio IA complet des artistes africains</span>
             </motion.div>
 
             {/* Headline */}
             <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
-              Crée ta musique{" "}
+              Le Studio IA des{" "}
               <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-violet-500 bg-clip-text text-transparent">
-                avec l&apos;IA
+                Artistes Africains
               </span>
-              .
             </motion.h1>
 
             {/* Subheadline */}
             <motion.p variants={fadeUp} className="text-lg text-zinc-400 max-w-lg leading-relaxed">
-              Décris ton idée, choisis ton style. Melodia crée ta chanson avec voix, pochette et plus encore.
+              Crée ta musique, tes clips vidéo et tes pochettes avec l&apos;IA. De l&apos;idée à la distribution, Melodia Up To Africa accompagne chaque étape de ta création.
             </motion.p>
 
             {/* CTA Buttons */}
             <motion.div variants={fadeUp} className="flex flex-wrap gap-4">
               <a href="/signup">
                 <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-base px-8 py-6 border-0 shadow-lg shadow-purple-500/25 rounded-xl">
-                  ✨ Créer ma chanson
+                  ✨ Commencer à créer
                 </Button>
               </a>
               <a href="#fonctionnalites">
                 <Button variant="outline" className="border-white/15 text-zinc-300 hover:text-white hover:border-white/25 text-base px-8 py-6 rounded-xl">
-                  ▶ Découvrir Melodia
+                  ▶ Découvrir le Studio
                 </Button>
               </a>
             </motion.div>
@@ -540,10 +546,11 @@ function HeroSection() {
               <div className="p-4 space-y-3">
                 <p className="text-white font-semibold text-sm">Ta chanson est prête !</p>
                 {[
-                  "Paroles générées",
-                  "Musique créée",
-                  "Pochette générée",
+                  "Paroles IA générées",
+                  "Composition & Voix IA",
+                  "Pochette Design IA",
                   "Mix & Master IA",
+                  "Clip vidéo IA",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
@@ -584,10 +591,10 @@ function HeroSection() {
 // ===== FEATURE BANNER =====
 function FeatureBanner() {
   const features = [
-    { icon: Shield, title: "Paiements sécurisés", subtitle: "100% sécurisés" },
+    { icon: Shield, title: "Paiements en FCFA", subtitle: "100% sécurisés" },
     { icon: Headphones, title: "IA de nouvelle génération", subtitle: "Résultats premium" },
     { icon: Cloud, title: "Stockage cloud", subtitle: "Accéder partout" },
-    { icon: Share2, title: "Partage facile", subtitle: "Partout dans le monde" },
+    { icon: Share2, title: "Distribution & Partage", subtitle: "Partout en Afrique" },
   ];
 
   return (
@@ -618,46 +625,54 @@ function FeatureBanner() {
   );
 }
 
-// ===== HOW IT WORKS =====
-function HowItWorks() {
+// ===== ARTIST PIPELINE =====
+function ArtistPipeline() {
   const steps = [
-    { icon: Music, title: "Décris ton idée", desc: "Choisis un style, une ambiance et décris ta chanson." },
-    { icon: Sparkles, title: "L'IA crée la musique et tes paroles", desc: "Mélodie composée, écrit et arrange ton morceau." },
-    { icon: ImageIcon, title: "Pochette générée automatiquement", desc: "Une pochette unique créée par l'IA." },
-    { icon: Play, title: "Écoute & télécharge", desc: "Écoute instantanément et télécharge ton morceau." },
-    { icon: Share2, title: "Partage la musique", desc: "Partage ta création avec tes fans partout." },
+    { icon: Sparkles, title: "Idée", desc: "Décris ton concept, ton ambiance, ton message." },
+    { icon: FileText, title: "Paroles", desc: "L'IA écrit des paroles adaptées aux styles africains." },
+    { icon: Music, title: "Composition", desc: "Mélodie, harmonie et arrangement générés par l'IA." },
+    { icon: Mic, title: "Voix", desc: "Voix IA réalistes ou enregistre ta propre voix." },
+    { icon: Layers, title: "Production", desc: "Arrangement complet, instruments et effets." },
+    { icon: Headphones, title: "Mix & Master", desc: "Mixage et mastering professionnels par l'IA." },
+    { icon: Palette, title: "Pochette", desc: "Design de pochette d'album unique par l'IA." },
+    { icon: Clapperboard, title: "Storyboard", desc: "Scénarisation visuelle pour ton clip vidéo." },
+    { icon: Video, title: "Clip IA", desc: "Génère ton clip vidéo complet avec l'IA." },
+    { icon: Share2, title: "Distribution", desc: "Partage sur toutes les plateformes africaines et mondiales." },
   ];
 
   return (
-    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+    <section id="pipeline" className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
-            Comment <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">ça marche</span> ?
+            Le pipeline <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">complet</span> de l&apos;artiste
           </h2>
+          <p className="text-zinc-400 mt-4 max-w-2xl mx-auto">
+            De l&apos;idée à la distribution, chaque étape de ta création musicale et audiovisuelle est couverte par l&apos;IA.
+          </p>
         </motion.div>
 
         <div className="relative">
-          {/* Dotted connector line */}
-          <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] border-t-2 border-dashed border-white/10" />
+          {/* Dotted connector line - desktop */}
+          <div className="hidden xl:block absolute top-12 left-[5%] right-[5%] border-t-2 border-dashed border-white/10" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 lg:gap-8">
             {steps.map((step, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ delay: i * 0.08 }}
                 className="flex flex-col items-center text-center relative"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center text-white font-bold text-sm mb-4 relative z-10 shadow-lg shadow-purple-500/30">
                   {i + 1}
                 </div>
-                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
-                  <step.icon className="w-6 h-6 text-purple-400" />
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-3">
+                  <step.icon className="w-5 h-5 text-purple-400" />
                 </div>
-                <h3 className="text-white font-semibold text-sm mb-2">{step.title}</h3>
+                <h3 className="text-white font-semibold text-sm mb-1">{step.title}</h3>
                 <p className="text-zinc-500 text-xs leading-relaxed">{step.desc}</p>
               </motion.div>
             ))}
@@ -671,11 +686,12 @@ function HowItWorks() {
 // ===== FEATURES GRID =====
 function FeaturesGrid() {
   const features = [
-    { icon: Music, title: "Music Studio", desc: "Crée des chansons uniques dans tous les styles africains et internationaux.", color: "from-pink-500 to-rose-500" },
-    { icon: Mic, title: "Voice Studio", desc: "Génère des voix réalistes et ajoute du chant à tes morceaux.", color: "from-blue-500 to-cyan-500" },
-    { icon: ImageIcon, title: "Cover Studio", desc: "Obtiens des pochettes professionnelles créées par l'IA.", color: "from-emerald-500 to-green-500" },
-    { icon: Video, title: "Video Studio", desc: "Transforme ta musique en clips vidéo avec l'IA (Pro & Studio).", color: "from-red-500 to-orange-500" },
-    { icon: MessageCircle, title: "Assistant Melodia", desc: "Ton copilote créatif pour t'aider à créer plus vite et mieux.", color: "from-purple-500 to-violet-500" },
+    { icon: PenTool, title: "Paroles IA", desc: "Songwriting intelligent adapté aux cultures et styles africains : Afrobeats, Amapiano, Ndombolo, Highlife et plus.", color: "from-pink-500 to-rose-500" },
+    { icon: Music, title: "Composition & Voix IA", desc: "Génère mélodies, harmonies et voix réalistes. Chante en français, anglais, lingala, wolof et plus.", color: "from-purple-500 to-violet-500" },
+    { icon: Palette, title: "Pochette & Design IA", desc: "Crée des pochettes d'album professionnelles et visuels de promotion uniques pour ta musique.", color: "from-emerald-500 to-green-500" },
+    { icon: Video, title: "Clip Vidéo IA", desc: "Transforme ta musique en clips vidéo complets avec storyboard, scènes et montage IA.", color: "from-red-500 to-orange-500" },
+    { icon: Headphones, title: "Mix & Master", desc: "Mixage et mastering professionnels pilotés par l'IA pour un son studio ready.", color: "from-blue-500 to-cyan-500" },
+    { icon: Share2, title: "Distribution & Partage", desc: "Distribue ta musique sur Spotify, Boomplay, Audiomack et partage sur les réseaux sociaux.", color: "from-amber-500 to-yellow-500" },
   ];
 
   return (
@@ -683,11 +699,14 @@ function FeaturesGrid() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
-            Tout ce qu&apos;il te faut pour créer <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">sans limites</span>
+            Le studio complet pour créer <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">sans limites</span>
           </h2>
+          <p className="text-zinc-400 mt-4 max-w-2xl mx-auto">
+            Paroles, composition, voix, pochette, clip, mix, distribution — tout dans un seul studio IA.
+          </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feat, i) => (
             <motion.div
               key={i}
@@ -717,68 +736,134 @@ function Pricing() {
 
   // Prix mensuels de base
   const monthlyPrices: Record<string, number> = {
-    Basic: 2000,
-    Pro: 5000,
-    Studio: 10000,
+    Découverte: 2000,
+    "Production Musicale": 5000,
+    "Artiste Actif": 10000,
+    Vidéo: 15000,
+    "Artiste Professionnel": 25000,
+    "Label / Studio": 50000,
   };
 
   const formatPrice = (name: string) => {
     const base = monthlyPrices[name];
     const finalPrice = annual ? Math.round(base * 0.8) : base;
-    if (name === "Studio") return `${finalPrice.toLocaleString("fr-FR")}+`;
     return finalPrice.toLocaleString("fr-FR");
   };
 
   const plans = [
     {
-      name: "Basic",
-      badge: "IDÉAL POUR DÉBUTER",
+      name: "Découverte",
+      badge: "POUR DÉCOUVRIR",
       badgeColor: "bg-zinc-700 text-zinc-300",
       features: [
-        { text: "2 chansons IA", included: true },
-        { text: "2 pochettes IA", included: true },
-        { text: "Paroles assistées", included: true },
-        { text: "Écoute & téléchargement", included: true },
+        { text: "3 chansons/mois", included: true },
+        { text: "3 pochettes IA", included: true },
+        { text: "Paroles IA", included: true },
+        { text: "Audio 128kbps", included: true },
+        { text: "Format MP3", included: true },
         { text: "Partage", included: true },
-        { text: "Stockage limité", included: true },
-        { text: "Pas de vidéo", included: false },
+        { text: "Clip vidéo", included: false },
       ],
-      button: "Commencer avec Basic",
+      button: "Commencer",
       buttonStyle: "bg-purple-600 hover:bg-purple-700 text-white",
       featured: false,
     },
     {
-      name: "Pro",
+      name: "Production Musicale",
+      badge: "CRÉER TA MUSIQUE",
+      badgeColor: "bg-zinc-700 text-zinc-300",
+      features: [
+        { text: "8 chansons/mois", included: true },
+        { text: "8 pochettes IA", included: true },
+        { text: "Composition IA", included: true },
+        { text: "Audio 320kbps", included: true },
+        { text: "Voix IA", included: true },
+        { text: "MP3 + WAV", included: true },
+        { text: "Mix basique", included: true },
+        { text: "5 Go stockage", included: true },
+        { text: "Clip vidéo", included: false },
+      ],
+      button: "Passer à Production",
+      buttonStyle: "bg-purple-600 hover:bg-purple-700 text-white",
+      featured: false,
+    },
+    {
+      name: "Artiste Actif",
       badge: "LE PLUS POPULAIRE",
       badgeColor: "bg-pink-500 text-white",
       features: [
-        { text: "Plus de chansons IA", included: true },
-        { text: "Plus de pochettes IA", included: true },
-        { text: "Haute qualité audio", included: true },
-        { text: "Voice Studio", included: true },
-        { text: "Clips vidéo courts", included: true },
-        { text: "Téléchargements illimités", included: true },
+        { text: "15 chansons/mois", included: true },
+        { text: "15 pochettes IA", included: true },
+        { text: "Voix premium", included: true },
+        { text: "Mix avancé", included: true },
+        { text: "Pochettes premium", included: true },
+        { text: "2 tâches parallèles", included: true },
+        { text: "15 Go stockage", included: true },
         { text: "Support prioritaire", included: true },
+        { text: "Clip vidéo long", included: false },
       ],
-      button: "Passer à Pro",
+      button: "Passer à Artiste Actif",
       buttonStyle: "bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white",
       featured: true,
     },
     {
-      name: "Studio",
-      badge: "POUR LES PROFESSIONNELS",
+      name: "Vidéo",
+      badge: "MUSIQUE + VIDÉO",
       badgeColor: "bg-orange-600 text-white",
       features: [
-        { text: "Tout dans Pro", included: true },
-        { text: "Video Studio avancé", included: true },
-        { text: "Clips vidéo longs", included: true },
-        { text: "Outils professionnels", included: true },
-        { text: "Modèles premium", included: true },
-        { text: "Stockage étendu", included: true },
+        { text: "20 chansons/mois", included: true },
+        { text: "20 pochettes IA", included: true },
+        { text: "3 clips vidéo IA", included: true },
+        { text: "Storyboard IA", included: true },
+        { text: "Audio 320kbps", included: true },
+        { text: "Voix premium", included: true },
+        { text: "Mix avancé", included: true },
+        { text: "3 tâches parallèles", included: true },
+        { text: "25 Go stockage", included: true },
+      ],
+      button: "Passer à Vidéo",
+      buttonStyle: "bg-purple-600 hover:bg-purple-700 text-white",
+      featured: false,
+    },
+    {
+      name: "Artiste Professionnel",
+      badge: "STUDIO COMPLET",
+      badgeColor: "bg-violet-600 text-white",
+      features: [
+        { text: "50 chansons/mois", included: true },
+        { text: "50 pochettes IA", included: true },
+        { text: "10 clips vidéo IA", included: true },
+        { text: "Studio vidéo complet", included: true },
+        { text: "Voix + harmonies", included: true },
+        { text: "Mix professionnel", included: true },
+        { text: "Modèles exclusifs", included: true },
+        { text: "Pages cadeaux", included: true },
+        { text: "5 tâches parallèles", included: true },
+        { text: "50 Go stockage", included: true },
         { text: "Support VIP", included: true },
       ],
-      button: "Passer à Studio",
+      button: "Passer à Pro",
       buttonStyle: "bg-purple-600 hover:bg-purple-700 text-white",
+      featured: false,
+    },
+    {
+      name: "Label / Studio",
+      badge: "POUR LES STRUCTURES",
+      badgeColor: "bg-gradient-to-r from-purple-600 to-pink-500 text-white",
+      features: [
+        { text: "Chansons illimitées", included: true },
+        { text: "Pochettes illimitées", included: true },
+        { text: "30 clips vidéo/mois", included: true },
+        { text: "Multi-artistes (10)", included: true },
+        { text: "Tous les modèles IA", included: true },
+        { text: "API complète", included: true },
+        { text: "10 tâches parallèles", included: true },
+        { text: "100 Go stockage", included: true },
+        { text: "Account manager", included: true },
+        { text: "Support 24/7", included: true },
+      ],
+      button: "Contacter l'équipe",
+      buttonStyle: "bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white",
       featured: false,
     },
   ];
@@ -790,6 +875,9 @@ function Pricing() {
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             Choisis <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">ton plan</span>
           </h2>
+          <p className="text-zinc-400 mt-4 max-w-xl mx-auto">
+            Tous les prix sont en FCFA. Paiement par Mobile Money, carte bancaire ou PayPal.
+          </p>
         </motion.div>
 
         {/* Toggle */}
@@ -810,15 +898,15 @@ function Pricing() {
           </div>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-start">
+        {/* Cards - 6 plans in 2 rows of 3 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
           {plans.map((plan, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.08 }}
               className={`relative ${plan.featured ? "lg:-mt-4 lg:mb-4" : ""}`}
             >
               {plan.featured && (
@@ -874,21 +962,21 @@ function Pricing() {
 function Testimonials() {
   const testimonials = [
     {
-      quote: "Melodia m'a permis de sortir mon premier single sans studio. C'est une révolution !",
+      quote: "Melodia Up To Africa m'a permis de sortir mon premier single sans studio. C'est une révolution pour les artistes africains !",
       name: "Eryam",
       role: "Artiste Afrobeats",
       initial: "E",
       color: "from-pink-500 to-purple-500",
     },
     {
-      quote: "Les pochettes sont incroyables et les clips courts m'aident à promouvoir ma musique.",
+      quote: "Les pochettes sont incroyables et les clips IA m'aident à promouvoir ma musique sur TikTok et Instagram.",
       name: "Aïcha",
       role: "Créatrice de contenu",
       initial: "A",
       color: "from-purple-500 to-blue-500",
     },
     {
-      quote: "Le plan Studio est un vrai studio de poche. Je produit tout avec Melodia maintenant !",
+      quote: "Le plan Artiste Professionnel est un vrai studio de poche. Je produis tout de l'idée au clip avec l'IA !",
       name: "Samy",
       role: "Producteur",
       initial: "S",
@@ -897,11 +985,11 @@ function Testimonials() {
   ];
 
   return (
-    <section id="blog" className="relative bg-[#0a0a0f] py-20 lg:py-28">
+    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
-            Ils créent avec <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Melodia</span>
+            Ils créent avec <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">Melodia Up To Africa</span>
           </h2>
         </motion.div>
 
@@ -950,20 +1038,24 @@ function Testimonials() {
 function FAQSection() {
   const faqs = [
     {
-      q: "Comment fonctionne Melodia ?",
-      a: "Melodia utilise l'intelligence artificielle pour générer de la musique à partir de votre description. Vous décrivez votre idée, choisissez un style musical, et notre IA compose la mélodie, écrit les paroles, et produit un morceau complet avec pochette.",
+      q: "Comment fonctionne Melodia Up To Africa ?",
+      a: "Melodia Up To Africa utilise l'intelligence artificielle pour générer de la musique, des clips vidéo et des pochettes à partir de votre description. Vous décrivez votre idée, choisissez un style musical, et notre IA compose la mélodie, écrit les paroles, produit le morceau, crée la pochette et peut même générer un clip vidéo.",
     },
     {
       q: "Ai-je besoin d'expérience en musique ?",
-      a: "Non, aucune expérience n'est requise ! Melodia est conçu pour les créateurs de tous niveaux. Décrivez simplement votre idée en langage naturel et l'IA s'occupe du reste.",
+      a: "Non, aucune expérience n'est requise ! Melodia Up To Africa est conçu pour les créateurs de tous niveaux. Décrivez simplement votre idée en langage naturel et l'IA s'occupe du reste.",
     },
     {
       q: "Puis-je utiliser ma musique à des fins commerciales ?",
-      a: "Oui, avec les plans Pro et Studio, vous disposez d'une licence commerciale complète pour utiliser votre musique générée sur toutes les plateformes de streaming et réseaux sociaux.",
+      a: "Oui, avec les plans Production Musicale et supérieurs, vous disposez d'une licence commerciale complète pour utiliser votre musique générée sur toutes les plateformes de streaming et réseaux sociaux.",
     },
     {
       q: "Quels sont les moyens de paiement acceptés ?",
-      a: "Nous acceptons les cartes bancaires, Mobile Money (Orange Money, MTN Money, Wave), PayPal et les virements bancaires. Les paiements sont 100% sécurisés.",
+      a: "Nous acceptons Mobile Money (Orange Money, MTN Money, Wave), les cartes bancaires, PayPal et les virements bancaires. Tous les paiements sont en FCFA et 100% sécurisés.",
+    },
+    {
+      q: "Comment fonctionne la génération de clips vidéo ?",
+      a: "À partir des plans Vidéo et supérieurs, l'IA crée un storyboard, génère les scènes visuelles et assemble un clip vidéo synchronisé avec votre musique. Vous pouvez personnaliser le style et l'ambiance du clip.",
     },
   ];
 
@@ -1031,14 +1123,14 @@ function BottomCTA() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-            Prêt à créer le prochain <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">hit</span> ?
+            Prêt à créer le prochain <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">hit africain</span> ?
           </h2>
           <p className="text-zinc-300 text-lg mb-8 max-w-xl mx-auto">
-            Rejoins des milliers de créateurs qui font déjà confiance à Melodia.
+            Rejoins des milliers de créateurs qui font déjà confiance à Melodia Up To Africa.
           </p>
           <a href="/signup">
             <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-lg px-10 py-6 border-0 shadow-lg shadow-purple-500/30 rounded-xl">
-              ✨ Créer ma chanson maintenant
+              ✨ Commencer à créer maintenant
             </Button>
           </a>
         </motion.div>
@@ -1060,12 +1152,12 @@ function Footer() {
                 <Music2 className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col leading-none">
-                <span className="text-white font-bold text-lg tracking-wide">MELODIA</span>
-                <span className="text-[10px] text-purple-400 font-medium tracking-wider uppercase">UP TO AFRICA</span>
+                <span className="text-white font-bold text-base tracking-wide">MELODIA</span>
+                <span className="text-[9px] text-purple-400 font-semibold tracking-wider uppercase">UP TO AFRICA</span>
               </div>
             </div>
             <p className="text-zinc-500 text-xs leading-relaxed mb-4">
-              La plateforme africaine de création musicale et vidéo assistée par IA.
+              Le studio de création musicale et audiovisuelle IA des artistes africains.
             </p>
             <div className="flex items-center gap-3">
               {[Facebook, Instagram, Music2, Youtube].map((Icon, i) => (
@@ -1080,7 +1172,7 @@ function Footer() {
           <div>
             <h4 className="text-white text-sm font-semibold mb-4">Produit</h4>
             <ul className="space-y-2">
-              {["Fonctionnalités", "Tarifs", "Mises à jour", "API (bientôt)"].map((item) => (
+              {["Fonctionnalités", "Tarifs", "Pipeline", "API (bientôt)"].map((item) => (
                 <li key={item}>
                   <a href="#" className="text-zinc-500 text-xs hover:text-zinc-300 transition-colors">{item}</a>
                 </li>
@@ -1139,7 +1231,7 @@ function Footer() {
 
         {/* Copyright */}
         <div className="border-t border-white/5 pt-6 text-center">
-          <p className="text-zinc-600 text-xs">&copy; 2025 Melodia Up to Africa. Tous droits réservés.</p>
+          <p className="text-zinc-600 text-xs">&copy; 2025 Melodia Up To Africa. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
@@ -1154,7 +1246,7 @@ export default function MelodiaLandingPage() {
       <main className="flex-1">
         <HeroSection />
         <FeatureBanner />
-        <HowItWorks />
+        <ArtistPipeline />
         <FeaturesGrid />
         <Pricing />
         <Testimonials />

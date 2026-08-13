@@ -26,16 +26,26 @@ export async function GET(req: NextRequest) {
       take: 10,
     });
 
-    return NextResponse.json({
+    // Debug: log raw credits object
+    console.log("[credits API] Raw credits from DB:", JSON.stringify(credits));
+    
+    const responseData = {
       credits: {
+        credits: credits.credits,
         songsRemaining: credits.songsRemaining,
         coversRemaining: credits.coversRemaining,
+        videosRemaining: credits.videosRemaining,
         totalSongsUsed: credits.totalSongsUsed,
         totalCoversUsed: credits.totalCoversUsed,
+        totalVideosUsed: credits.totalVideosUsed,
+        totalCreditsUsed: credits.totalCreditsUsed,
         storageUsedMb: credits.storageUsedMb,
       },
       transactions,
-    });
+    };
+    console.log("[credits API] Response:", JSON.stringify(responseData));
+    
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Get credits error:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

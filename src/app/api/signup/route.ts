@@ -32,18 +32,22 @@ export async function POST(req: NextRequest) {
         email: data.email,
         password: data.password,
         role: "user",
-        plan: "basic",
+        plan: "decouverte",
       },
     });
 
-    // Create default credits
+    // Create default credits (Découverte plan: 20 credits, 3 songs, 3 covers)
     await db.userCredits.create({
       data: {
         userId: user.id,
-        songsRemaining: 2,
-        coversRemaining: 2,
+        credits: 20,
+        songsRemaining: 3,
+        coversRemaining: 3,
+        videosRemaining: 0,
         totalSongsUsed: 0,
         totalCoversUsed: 0,
+        totalVideosUsed: 0,
+        totalCreditsUsed: 0,
         storageUsedMb: 0,
       },
     });

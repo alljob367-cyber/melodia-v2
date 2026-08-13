@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { Card } from "@/components/ui/card";
@@ -45,14 +46,18 @@ const stats = [
 ];
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const userName = session?.user?.name || "Créateur";
+  const userPlan = (session?.user as any)?.plan || "basic";
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        userPlan="basic"
+        userPlan={userPlan}
         songsRemaining={2}
         songsTotal={2}
       />
@@ -60,7 +65,7 @@ export default function DashboardPage() {
       <main
         className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}
       >
-        <Header title="Tableau de bord" userName="Jean Paul" userPlan="basic" />
+        <Header title="Tableau de bord" userName={userName} userPlan={userPlan} />
 
         <div className="p-6 space-y-6">
           {/* Welcome banner */}
@@ -74,7 +79,7 @@ export default function DashboardPage() {
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-white mb-1">
-                    Bienvenue, Jean Paul ! 👋
+                    Bienvenue, {userName} ! 👋
                   </h2>
                   <p className="text-slate-400 text-sm">
                     Tu as <span className="text-purple-400 font-semibold">2 créations restantes</span> sur ton pack Basic. Continue à créer !

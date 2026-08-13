@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   Music,
   Mic,
@@ -35,6 +38,10 @@ import {
   Wand2,
   Mail,
   Lock,
+  User,
+  Eye,
+  EyeOff,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,10 +73,116 @@ const stagger = {
 
 // ===== HEADER =====
 function Header() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [langOpen, setLangOpen] = useState(false);
   const [lang, setLang] = useState("FR");
   const [loginOpen, setLoginOpen] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Signup form state
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+
+  // Create song state
+  const [songDesc, setSongDesc] = useState("");
+  const [selectedStyle, setSelectedStyle] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const result = await signIn("credentials", {
+        email: loginEmail,
+        password: loginPassword,
+        redirect: false,
+      });
+      if (result?.error) {
+        toast.error("Email ou mot de passe incorrect");
+      } else {
+        toast.success("Connexion réussie ! 🎵");
+        setLoginOpen(false);
+        setTimeout(() => { window.location.href = "/dashboard"; }, 500);
+      }
+    } catch (error) {
+      toast.error("Erreur de connexion");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupName || !signupEmail || !signupPassword) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+    if (signupPassword.length < 6) {
+      toast.error("Le mot de passe doit avoir au moins 6 caractères");
+      return;
+    }
+    setSignupLoading(true);
+    try {
+      // Create account via API
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: signupName, email: signupEmail, password: signupPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Erreur lors de l'inscription");
+        return;
+      }
+      // Auto sign in
+      const result = await signIn("credentials", {
+        email: signupEmail,
+        password: signupPassword,
+        redirect: false,
+      });
+      if (result?.ok) {
+        toast.success("Bienvenue dans MELODIA ! 🎵");
+        setSignupOpen(false);
+        setTimeout(() => { window.location.href = "/dashboard"; }, 500);
+      } else {
+        toast.success("Compte créé ! Connecte-toi maintenant.");
+        setSignupOpen(false);
+        setLoginOpen(true);
+      }
+    } catch (error) {
+      toast.error("Erreur lors de l'inscription");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
+  const handleCreateSong = () => {
+    if (session) {
+      // User is logged in, go to dashboard/create
+      setCreateOpen(false);
+      router.push("/create");
+    } else {
+      // Not logged in, close create dialog and open signup
+      setCreateOpen(false);
+      setSignupOpen(true);
+    }
+  };
+
+  const isLoggedIn = !!session;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
@@ -127,75 +240,201 @@ function Header() {
               )}
             </div>
 
-            {/* Se connecter */}
-            <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="hidden sm:inline-flex border-white/10 text-zinc-300 hover:text-white hover:border-white/20 text-sm gap-2">
-                  <LogIn className="w-4 h-4" />
-                  Se connecter
+            {isLoggedIn ? (
+              <>
+                {/* Logged in: show user + dashboard */}
+                <Button
+                  variant="outline"
+                  className="hidden sm:inline-flex border-white/10 text-zinc-300 hover:text-white hover:border-white/20 text-sm gap-2"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  <User className="w-4 h-4" />
+                  {session?.user?.name || "Dashboard"}
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-white text-xl">Se connecter</DialogTitle>
-                  <DialogDescription className="text-zinc-400">Accédez à ton compte Melodia</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-zinc-300 flex items-center gap-2"><Mail className="w-4 h-4" /> Email</label>
-                    <Input placeholder="ton@email.com" className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-zinc-300 flex items-center gap-2"><Lock className="w-4 h-4" /> Mot de passe</label>
-                    <Input type="password" placeholder="••••••••" className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600" />
-                  </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-5 rounded-xl border-0">
-                    Se connecter
-                  </Button>
-                  <p className="text-center text-xs text-zinc-500">Pas encore de compte ? <span className="text-purple-400 cursor-pointer hover:underline">Créer un compte</span></p>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Créer ma chanson */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm border-0 shadow-lg shadow-purple-500/25 gap-2">
+                <Button
+                  className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm border-0 shadow-lg shadow-purple-500/25 gap-2"
+                  onClick={() => router.push("/create")}
+                >
                   <Wand2 className="w-4 h-4" />
                   Créer ma chanson
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-lg">
+              </>
+            ) : (
+              <>
+                {/* Se connecter */}
+                <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="hidden sm:inline-flex border-white/10 text-zinc-300 hover:text-white hover:border-white/20 text-sm gap-2">
+                      <LogIn className="w-4 h-4" />
+                      Se connecter
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-white text-xl">Se connecter</DialogTitle>
+                      <DialogDescription className="text-zinc-400">Accédez à ton compte Melodia</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleLogin} className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <label className="text-sm text-zinc-300 flex items-center gap-2"><Mail className="w-4 h-4" /> Email</label>
+                        <Input
+                          type="email"
+                          placeholder="ton@email.com"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm text-zinc-300 flex items-center gap-2"><Lock className="w-4 h-4" /> Mot de passe</label>
+                        <div className="relative">
+                          <Input
+                            type={showLoginPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowLoginPassword(!showLoginPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                          >
+                            {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={loginLoading}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-5 rounded-xl border-0"
+                      >
+                        {loginLoading ? (
+                          <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Connexion...</span>
+                        ) : (
+                          "Se connecter"
+                        )}
+                      </Button>
+                      <p className="text-center text-xs text-zinc-500">
+                        Pas encore de compte ?{" "}
+                        <span
+                          className="text-purple-400 cursor-pointer hover:underline"
+                          onClick={() => { setLoginOpen(false); setSignupOpen(true); }}
+                        >
+                          Créer un compte
+                        </span>
+                      </p>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Créer ma chanson (opens signup if not logged in) */}
+                <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm border-0 shadow-lg shadow-purple-500/25 gap-2">
+                      <Wand2 className="w-4 h-4" />
+                      Créer ma chanson
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle className="text-white text-xl flex items-center gap-2">
+                        <Wand2 className="w-5 h-5 text-purple-400" />
+                        Créer ma chanson
+                      </DialogTitle>
+                      <DialogDescription className="text-zinc-400">Inscris-toi gratuitement pour créer ta première chanson IA</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <p className="text-sm text-zinc-300">Pour créer ta chanson avec l&apos;IA, tu dois d&apos;abord créer un compte gratuit. Tu recevras <span className="text-purple-400 font-semibold">2 chansons gratuites</span> pour commencer !</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-4 rounded-xl border-0"
+                          onClick={() => { setCreateOpen(false); setSignupOpen(true); }}
+                        >
+                          Créer un compte
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="border-white/10 text-zinc-300 hover:text-white hover:border-white/20 py-4 rounded-xl"
+                          onClick={() => { setCreateOpen(false); setLoginOpen(true); }}
+                        >
+                          Se connecter
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            )}
+
+            {/* Signup Dialog */}
+            <Dialog open={signupOpen} onOpenChange={setSignupOpen}>
+              <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-white text-xl flex items-center gap-2">
-                    <Wand2 className="w-5 h-5 text-purple-400" />
-                    Créer ma chanson
-                  </DialogTitle>
-                  <DialogDescription className="text-zinc-400">Décris ton idée et laisse l&apos;IA faire la magie</DialogDescription>
+                  <DialogTitle className="text-white text-xl">Créer un compte</DialogTitle>
+                  <DialogDescription className="text-zinc-400">Commence à créer ta musique avec l&apos;IA</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 pt-4">
+                <form onSubmit={handleSignup} className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <label className="text-sm text-zinc-300">Décris ta chanson</label>
-                    <textarea
-                      placeholder="Ex: Une chanson afrobeat joyeuse sur l'amour et la danse..."
-                      className="w-full h-24 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-zinc-600 p-3 text-sm resize-none focus:border-purple-500/50 focus:outline-none transition-colors"
+                    <label className="text-sm text-zinc-300 flex items-center gap-2"><User className="w-4 h-4" /> Nom</label>
+                    <Input
+                      type="text"
+                      placeholder="Ton nom"
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-zinc-300">Style musical</label>
-                    <div className="flex flex-wrap gap-2">
-                      {["Afrobeats", "Amapiano", "Afropop", "Rap", "R&B", "Gospel", "Coupe Decale", "Ndombolo"].map((style) => (
-                        <span key={style} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-zinc-300 hover:border-purple-500/30 hover:text-white cursor-pointer transition-colors">
-                          {style}
-                        </span>
-                      ))}
+                    <label className="text-sm text-zinc-300 flex items-center gap-2"><Mail className="w-4 h-4" /> Email</label>
+                    <Input
+                      type="email"
+                      placeholder="ton@email.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-300 flex items-center gap-2"><Lock className="w-4 h-4" /> Mot de passe</label>
+                    <div className="relative">
+                      <Input
+                        type={showSignupPassword ? "text" : "password"}
+                        placeholder="6 caractères minimum"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                      >
+                        {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-5 rounded-xl border-0 gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Générer ma chanson
+                  <Button
+                    type="submit"
+                    disabled={signupLoading}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-5 rounded-xl border-0"
+                  >
+                    {signupLoading ? (
+                      <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Création...</span>
+                    ) : (
+                      "Créer mon compte"
+                    )}
                   </Button>
-                </div>
+                  <p className="text-center text-xs text-zinc-500">
+                    Déjà un compte ?{" "}
+                    <span
+                      className="text-purple-400 cursor-pointer hover:underline"
+                      onClick={() => { setSignupOpen(false); setLoginOpen(true); }}
+                    >
+                      Se connecter
+                    </span>
+                  </p>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
@@ -241,7 +480,7 @@ function HeroSection() {
 
             {/* CTA Buttons */}
             <motion.div variants={fadeUp} className="flex flex-wrap gap-4">
-              <a href="#tarifs">
+              <a href="/signup">
                 <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-base px-8 py-6 border-0 shadow-lg shadow-purple-500/25 rounded-xl">
                   ✨ Créer ma chanson
                 </Button>
@@ -797,7 +1036,7 @@ function BottomCTA() {
           <p className="text-zinc-300 text-lg mb-8 max-w-xl mx-auto">
             Rejoins des milliers de créateurs qui font déjà confiance à Melodia.
           </p>
-          <a href="#tarifs">
+          <a href="/signup">
             <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-lg px-10 py-6 border-0 shadow-lg shadow-purple-500/30 rounded-xl">
               ✨ Créer ma chanson maintenant
             </Button>

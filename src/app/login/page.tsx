@@ -37,7 +37,8 @@ export default function LoginPage() {
         toast.error("Email ou mot de passe incorrect");
       } else {
         toast.success("Connexion réussie !");
-        router.push("/dashboard");
+        // Use window.location for full reload to ensure session cookie is picked up by middleware
+        setTimeout(() => { window.location.href = "/dashboard"; }, 500);
       }
     } catch (error) {
       toast.error("Erreur de connexion");

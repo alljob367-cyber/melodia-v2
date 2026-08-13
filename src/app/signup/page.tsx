@@ -55,7 +55,8 @@ export default function SignupPage() {
 
       if (result?.ok) {
         toast.success("Bienvenue dans MELODIA ! 🎵");
-        router.push("/dashboard");
+        // Use window.location for full reload to ensure session cookie is picked up by middleware
+        setTimeout(() => { window.location.href = "/dashboard"; }, 500);
       } else {
         toast.success("Compte créé ! Connecte-toi maintenant.");
         router.push("/login");

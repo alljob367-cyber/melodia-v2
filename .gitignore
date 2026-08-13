@@ -59,3 +59,12 @@ server.log
 
 # Uploaded files (may contain secrets)
 /upload/
+
+# Generated content (audio, covers, videos)
+/public/generated/
+
+# Tool results
+/tool-results/
+
+# Test scripts
+/scripts/

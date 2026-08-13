@@ -81,9 +81,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("Signup error:", error);
+    console.error("[signup] Error:", error);
     return NextResponse.json(
-      { error: "Erreur lors de l'inscription" },
+      { error: "Erreur lors de l'inscription: " + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     );
   }

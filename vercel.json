@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install && npx prisma generate",
+  "regions": ["cdg1"],
+  "env": {
+    "NEXTAUTH_SECRET": "@melodia-nextauth-secret",
+    "NEXTAUTH_URL": "@melodia-nextauth-url",
+    "OPENROUTER_API_KEY": "@melodia-openrouter-key",
+    "DATABASE_URL": "@melodia-database-url"
+  }
+}

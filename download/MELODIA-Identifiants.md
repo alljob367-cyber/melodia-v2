@@ -45,10 +45,10 @@
 | **Hôte** | `ep-dawn-bread-ay3hjwsa-pooler.c-5.us-east-2.aws.neon.tech` |
 | **Base** | `neondb` |
 | **Utilisateur** | `neondb_owner` |
-| **Mot de passe** | `*(voir .env)*` |
+| **Mot de passe** | *(voir .env)* |
 | **Région** | AWS us-east-2 (Ohio) |
 | **SSL** | require |
-| **DATABASE_URL** | `postgresql://neondb_owner:*(voir .env)*@ep-dawn-bread-ay3hjwsa-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require` |
+| **DATABASE_URL** | *(voir .env)* |
 
 ---
 
@@ -58,7 +58,7 @@
 |---------|-------------|
 | **NextAuth Secret** | `melodia-secret-dev-key-2026` |
 | **NextAuth URL** | `http://localhost:3000` |
-| **OpenRouter API Key** | `*(voir .env — non commité pour sécurité)*` |
+| **OpenRouter API Key** | *(voir .env — non commité pour sécurité)* |
 
 ---
 

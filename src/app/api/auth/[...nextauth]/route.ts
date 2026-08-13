@@ -2,62 +2,69 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import type { NextRequest } from "next/server";
 
-// Build the NextAuth config (shared between requests)
-function getNextAuthConfig(request?: NextRequest) {
-  // When behind a reverse proxy (Caddy), determine NEXTAUTH_URL from request headers
-  // This ensures cookies and redirects use the correct external origin
-  let nextAuthUrl = process.env.NEXTAUTH_URL;
-
-  if (request) {
-    const xForwardedHost = request.headers.get("x-forwarded-host");
-    const xForwardedProto = request.headers.get("x-forwarded-proto") || "https";
-    const host = request.headers.get("host");
-
-    if (xForwardedHost) {
-      nextAuthUrl = `${xForwardedProto}://${xForwardedHost}`;
-    } else if (host && !host.startsWith("localhost")) {
-      nextAuthUrl = `${xForwardedProto}://${host}`;
+// Auto-seed check: ensure admin user exists before any auth attempt
+let seedChecked = false;
+async function ensureSeed() {
+  if (seedChecked) return;
+  try {
+    const admin = await db.user.findUnique({
+      where: { email: "admin@melodia.ai" },
+      select: { id: true },
+    });
+    if (!admin) {
+      console.log("[auth] No admin user found, triggering seed...");
+      // Trigger the seed endpoint internally
+      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      try {
+        await fetch(`${baseUrl}/api/seed`);
+      } catch {
+        // If fetch fails (e.g. during build), ignore
+      }
     }
+    seedChecked = true;
+  } catch {
+    // DB not ready, will retry next time
   }
+}
 
-  // Set NEXTAUTH_URL for this request context so NextAuth uses it
-  if (nextAuthUrl) {
-    process.env.NEXTAUTH_URL = nextAuthUrl;
-  }
+const handler = NextAuth({
+  providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Mot de passe", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
-  return {
-    providers: [
-      CredentialsProvider({
-        name: "credentials",
-        credentials: {
-          email: { label: "Email", type: "email" },
-          password: { label: "Mot de passe", type: "password" },
-        },
-        async authorize(credentials) {
-          if (!credentials?.email || !credentials?.password) {
-            return null;
-          }
+        // Ensure DB is seeded before attempting auth
+        await ensureSeed();
 
+        try {
           const user = await db.user.findUnique({
             where: { email: credentials.email },
           });
 
           if (!user || !user.password) {
+            console.log("[auth] User not found:", credentials.email);
             return null;
           }
 
-          // Verify password with bcrypt
           const passwordValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
 
           if (!passwordValid) {
+            console.log("[auth] Invalid password for:", credentials.email);
             return null;
           }
 
+          console.log("[auth] ✅ Login successful:", credentials.email);
           return {
             id: user.id,
             email: user.email,
@@ -65,56 +72,38 @@ function getNextAuthConfig(request?: NextRequest) {
             role: user.role,
             plan: user.plan,
           };
-        },
-      }),
-    ],
-    callbacks: {
-      async jwt({ token, user }) {
-        if (user) {
-          token.role = (user as any).role;
-          token.plan = (user as any).plan;
+        } catch (error) {
+          console.error("[auth] Authorize error:", error);
+          return null;
         }
-        return token;
       },
-      async session({ session, token }) {
-        if (session.user) {
-          (session.user as any).id = token.sub;
-          (session.user as any).role = token.role;
-          (session.user as any).plan = token.plan;
-        }
-        return session;
-      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }: any) {
+      if (user) {
+        token.role = user.role;
+        token.plan = user.plan;
+      }
+      return token;
     },
-    pages: {
-      signIn: "/login",
-      error: "/login",
+    async session({ session, token }: any) {
+      if (session.user) {
+        session.user.id = token.sub;
+        session.user.role = token.role;
+        session.user.plan = token.plan;
+      }
+      return session;
     },
-    session: {
-      strategy: "jwt",
-    },
-    secret: process.env.NEXTAUTH_SECRET || "melodia-secret-dev-key-2026",
-  };
-}
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
+  session: {
+    strategy: "jwt" as const,
+  },
+  secret: process.env.NEXTAUTH_SECRET || "melodia-secret-dev-key-2026",
+});
 
-// Create a dynamic handler that adapts to the request origin
-async function dynamicHandler(request: NextRequest) {
-  // Determine the correct NEXTAUTH_URL from proxy headers before handling
-  const xForwardedHost = request.headers.get("x-forwarded-host");
-  const xForwardedProto = request.headers.get("x-forwarded-proto") || "https";
-  const host = request.headers.get("host");
-
-  if (xForwardedHost) {
-    process.env.NEXTAUTH_URL = `${xForwardedProto}://${xForwardedHost}`;
-  } else if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
-    // If accessed via a non-localhost host, use it
-    const proto = request.headers.get("x-forwarded-proto") ||
-      (request.nextUrl.protocol === "https:" ? "https" : "http");
-    process.env.NEXTAUTH_URL = `${proto}://${host}`;
-  }
-  // Otherwise, keep the default NEXTAUTH_URL from .env (http://localhost:3000)
-
-  const handler = NextAuth(getNextAuthConfig(request));
-  return handler(request);
-}
-
-export { dynamicHandler as GET, dynamicHandler as POST };
+export { handler as GET, handler as POST };

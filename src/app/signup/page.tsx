@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Music, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Check } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,12 +78,7 @@ export default function SignupPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl btn-gradient flex items-center justify-center">
-              <Music className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-2xl font-extrabold text-white tracking-wider">MELODIA</span>
-          </Link>
+          <Logo size="md" />
         </div>
 
         <Card className="glass p-8">

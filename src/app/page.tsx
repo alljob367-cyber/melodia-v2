@@ -52,6 +52,7 @@ import {
   Menu,
 } from "lucide-react";
 import { MobileMenu } from "@/components/mobile-nav";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -199,13 +200,7 @@ function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <a href="#accueil" className="flex items-center gap-2 cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Music2 className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-white font-bold text-base tracking-wide">MELODIA</span>
-              <span className="text-[9px] text-purple-400 font-semibold tracking-wider uppercase">UP TO AFRICA</span>
-            </div>
+            <Logo size="sm" showSubtitle link={false} />
           </a>
 
           {/* Nav Desktop */}
@@ -1151,14 +1146,8 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Music2 className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-white font-bold text-base tracking-wide">MELODIA</span>
-                <span className="text-[9px] text-purple-400 font-semibold tracking-wider uppercase">UP TO AFRICA</span>
-              </div>
+            <div className="mb-4">
+              <Logo size="sm" showSubtitle link={false} />
             </div>
             <p className="text-zinc-500 text-xs leading-relaxed mb-4">
               Le studio de création musicale et audiovisuelle IA des artistes africains.

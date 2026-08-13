@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description: "L'IA qui crée ta musique. Générez des chansons, pochettes et clips vidéo avec l'intelligence artificielle. Made in Africa.",
   keywords: ["MELODIA", "IA", "musique", "Afrobeat", "Amapiano", "Afropop", "génération musicale", "AI music"],
   icons: {
-    icon: "/logo.svg",
+    icon: "/melodia-logo-dark.png",
   },
 };
 

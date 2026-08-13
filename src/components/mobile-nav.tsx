@@ -12,10 +12,10 @@ import {
   Headphones,
   Menu,
   X,
-  Sparkles,
   LogOut,
   Settings,
 } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 
 // ===== MOBILE HAMBURGER MENU =====
@@ -89,10 +89,7 @@ export function MobileMenu({ isLoggedIn = false, userName }: MobileMenuProps) {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/5">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-base font-bold text-white">MELODIA</span>
+                  <Logo size="sm" link={false} />
                 </div>
                 <button
                   onClick={() => setOpen(false)}

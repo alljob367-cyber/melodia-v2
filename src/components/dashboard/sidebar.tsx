@@ -17,6 +17,7 @@ import {
   Sparkles,
   Rocket,
 } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -60,12 +61,7 @@ export function Sidebar({
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-white/5">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex-shrink-0 w-9 h-9 rounded-lg btn-gradient flex items-center justify-center">
-            <Music className="w-5 h-5 text-white" />
-          </div>
-          {!collapsed && (
-            <span className="text-lg font-extrabold text-white tracking-wider truncate">MELODIA</span>
-          )}
+          <Logo size="sm" showSubtitle={!collapsed} link={false} />
         </div>
         <button
           onClick={onToggle}

@@ -24,15 +24,8 @@ const handler = NextAuth({
           return null;
         }
 
-        // Verify password with bcrypt (supports both hashed and legacy plaintext)
-        let passwordValid = false;
-        if (user.password.startsWith("$2a$") || user.password.startsWith("$2b$")) {
-          // Hashed password — use bcrypt.compare
-          passwordValid = await bcrypt.compare(credentials.password, user.password);
-        } else {
-          // Legacy plaintext fallback (for seed data) — remove after migration
-          passwordValid = user.password === credentials.password;
-        }
+        // Verify password with bcrypt
+        const passwordValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!passwordValid) {
           return null;

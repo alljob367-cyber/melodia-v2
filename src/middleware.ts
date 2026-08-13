@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 // Routes that don't require authentication
 const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/api/health"];
@@ -7,7 +8,7 @@ const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/ap
 // Routes that require admin role
 const adminRoutes = ["/admin", "/api/admin"];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
@@ -25,57 +26,35 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for auth token
-  const sessionToken = request.cookies.get("next-auth.session-token")?.value;
+  // Get the decoded NextAuth JWT token (handles JWE decryption automatically)
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET || "melodia-secret-dev-key-2026",
+  });
 
-  if (!sessionToken) {
-    // For API routes, return 401
+  // No valid session — redirect to login or return 401
+  if (!token) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
-    // For page routes, redirect to login
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin route protection — check session role via next-auth session token
-  // The JWT token contains the role; we decode it to check
+  // Admin route protection — check role from decoded token
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
-    try {
-      // Decode the JWT payload (base64) to check the role
-      // Format: header.payload.signature
-      const parts = sessionToken.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(
-          Buffer.from(parts[1], "base64url").toString("utf-8")
-        );
-        const role = payload?.role || payload?.user?.role;
+    const role = token.role as string | undefined;
 
-        if (role !== "admin") {
-          // Non-admin trying to access admin route
-          if (pathname.startsWith("/api/")) {
-            return NextResponse.json(
-              { error: "Accès réservé à l'administration" },
-              { status: 403 }
-            );
-          }
-          // Redirect non-admin users to their dashboard
-          return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
-      } else {
-        // Invalid token format — deny access
-        if (pathname.startsWith("/api/")) {
-          return NextResponse.json({ error: "Token invalide" }, { status: 401 });
-        }
-        return NextResponse.redirect(new URL("/login", request.url));
-      }
-    } catch {
-      // Token decode failed — deny admin access
+    if (role !== "admin") {
       if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Token invalide" }, { status: 401 });
+        return NextResponse.json(
+          { error: "Accès réservé à l'administration" },
+          { status: 403 }
+        );
       }
-      return NextResponse.redirect(new URL("/login", request.url));
+      // Redirect non-admin users to their dashboard
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 

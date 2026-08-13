@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 async function seed() {
   console.log("🌱 Seeding Melodia Up To Africa...");
@@ -154,26 +155,28 @@ async function seed() {
   }
 
   // ============ ADMIN USER ============
+  const adminHashedPw = await bcrypt.hash("admin123", 10);
   const adminUser = await db.user.upsert({
     where: { email: "admin@melodia.ai" },
-    update: {},
+    update: { password: adminHashedPw },
     create: {
       email: "admin@melodia.ai",
       name: "Admin MELODIA",
-      password: "admin123",
+      password: adminHashedPw,
       role: "admin",
       plan: "label",
     },
   });
 
   // ============ DEMO USER ============
+  const demoHashedPw = await bcrypt.hash("demo123", 10);
   const demoUser = await db.user.upsert({
     where: { email: "jean@example.com" },
-    update: {},
+    update: { password: demoHashedPw },
     create: {
       email: "jean@example.com",
       name: "Jean Paul",
-      password: "demo123",
+      password: demoHashedPw,
       role: "user",
       plan: "artiste",
     },

@@ -34,13 +34,7 @@
 
 ### Utilisateur Existant (inscrit via l'app)
 
-| Champ | Valeur |
-|-------|--------|
-| **Email** | `alljob367@gmail.com` |
-| **Nom** | ALLJOB BATACONNECT IA |
-| **Rôle** | `user` |
-| **Plan** | basic |
-| **Mot de passe** | *(défini par l'utilisateur à l'inscription)* |
+> **Note** : L'utilisateur `alljob367@gmail.com` a été supprimé de la base de données le 14/08/2026.
 
 ---
 
@@ -124,7 +118,17 @@
 - **Auth** : NextAuth.js (Credentials Provider, JWT strategy)
 - **Hash** : bcryptjs (10 salt rounds)
 - **UI** : Tailwind CSS + shadcn/ui
-- **IA** : OpenRouter API (modèles de génération musicale)
+- **IA** : z-ai-web-dev-sdk CLI (chat, image, tts, video)
+
+---
+
+## 🔧 Corrections appliquées (14/08/2026)
+
+- **Problème** : La variable d'environnement shell `DATABASE_URL` pointait vers SQLite (`file:db/custom.db`) et surchargeait le `.env` qui contient l'URL Neon PostgreSQL.
+- **Correction** : Scripts `package.json` modifiés pour utiliser `env -u DATABASE_URL` afin de supprimer la variable shell et laisser le `.env` prendre la priorité.
+- **Amélioration** : Ajout d'un diagnostic DB dans `src/lib/db.ts` qui affiche `[db] DATABASE_URL: ✅ PostgreSQL` au démarrage.
+- **Amélioration** : Ajout d'une validation DB dans `/api/generate/route.ts` qui vérifie que `DATABASE_URL` commence par `postgresql://`.
+- **Amélioration** : Messages d'erreur plus détaillés dans l'API generate (affiche l'erreur exacte au lieu de "Réessaie").
 
 ---
 

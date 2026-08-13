@@ -1,0 +1,808 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useRef } from "react";
+     4→import { useRouter } from "next/navigation";
+     5→import { useSession } from "next-auth/react";
+     6→import { Sidebar } from "@/components/dashboard/sidebar";
+     7→import { Header } from "@/components/dashboard/header";
+     8→import { Card } from "@/components/ui/card";
+     9→import { Button } from "@/components/ui/button";
+    10→import { Input } from "@/components/ui/input";
+    11→import { Textarea } from "@/components/ui/textarea";
+    12→import { Label } from "@/components/ui/label";
+    13→import { Progress } from "@/components/ui/progress";
+    14→import { Badge } from "@/components/ui/badge";
+    15→import {
+    16→  Music,
+    17→  ArrowRight,
+    18→  ArrowLeft,
+    19→  Sparkles,
+    20→  Mic,
+    21→  Image,
+    22→  Video,
+    23→  Check,
+    24→  Loader2,
+    25→  Play,
+    26→  Pause,
+    27→  Download,
+    28→  Share2,
+    29→  Heart,
+    30→  Globe,
+    31→  PlusCircle,
+    32→  PenTool,
+    33→  Volume2,
+    34→  Palette,
+    35→  Clapperboard,
+    36→  Wand2,
+    37→  FileMusic,
+    38→  Disc3,
+    39→} from "lucide-react";
+    40→import { motion, AnimatePresence } from "framer-motion";
+    41→import { toast } from "sonner";
+    42→import { cn } from "@/lib/utils";
+    43→
+    44→// ===== AFRICAN MUSIC STYLES =====
+    45→const musicStyles = [
+    46→  { id: "afrobeat", name: "Afrobeat", emoji: "🥁", desc: "Rythmes puissants, basse profonde" },
+    47→  { id: "afropop", name: "Afropop", emoji: "🎤", desc: "Pop africaine moderne et catchy" },
+    48→  { id: "amapiano", name: "Amapiano", emoji: "🎹", desc: "House sud-africaine, drums logs" },
+    49→  { id: "afro-rnb", name: "Afro R&B", emoji: "💜", desc: "R&B avec âme africaine" },
+    50→  { id: "makossa", name: "Makossa", emoji: "🎺", desc: "Groove camerounais urbain" },
+    51→  { id: "bikutsi", name: "Bikutsi", emoji: "🪘", desc: "Rythme traditionnel camerounais" },
+    52→  { id: "zouk", name: "Zouk", emoji: "🌊", desc: "Musique dansante antillaise" },
+    53→  { id: "gospel", name: "Gospel", emoji: "🙏", desc: "Louange et worship africain" },
+    54→  { id: "rap", name: "Rap Africain", emoji: "🔥", desc: "Hip-hop avec flow local" },
+    55→  { id: "highlife", name: "Highlife", emoji: "🎸", desc: "Classique ghanéen-nigérian" },
+    56→];
+    57→
+    58→const themes = [
+    59→  { id: "love", name: "Amour & Romance", emoji: "❤️" },
+    60→  { id: "freedom", name: "Liberté", emoji: "🕊️" },
+    61→  { id: "party", name: "Fête & Célébration", emoji: "🎉" },
+    62→  { id: "struggle", name: "Lutte & Persévérance", emoji: "💪" },
+    63→  { id: "faith", name: "Foi & Spiritualité", emoji: "✨" },
+    64→  { id: "africa", name: "Afrique & Fierté", emoji: "🌍" },
+    65→  { id: "family", name: "Famille", emoji: "👨‍👩‍👧" },
+    66→  { id: "dreams", name: "Rêves & Ambition", emoji: "🌟" },
+    67→];
+    68→
+    69→const moods = [
+    70→  { id: "joyful", name: "Joyeux", emoji: "😊", color: "from-amber-500/20 to-orange-500/20" },
+    71→  { id: "melancholic", name: "Mélancolique", emoji: "😢", color: "from-blue-500/20 to-indigo-500/20" },
+    72→  { id: "energetic", name: "Énergique", emoji: "⚡", color: "from-red-500/20 to-pink-500/20" },
+    73→  { id: "chill", name: "Chill & Détendu", emoji: "😌", color: "from-emerald-500/20 to-teal-500/20" },
+    74→  { id: "powerful", name: "Puissant", emoji: "🔥", color: "from-orange-500/20 to-red-500/20" },
+    75→  { id: "dreamy", name: "Rêveur", emoji: "💭", color: "from-purple-500/20 to-violet-500/20" },
+    76→];
+    77→
+    78→// ===== STUDIO PIPELINE STEPS =====
+    79→const pipelineSteps = [
+    80→  { id: "style", name: "Style", icon: Music, desc: "Genre musical" },
+    81→  { id: "theme", name: "Thème", icon: PenTool, desc: "Vision & message" },
+    82→  { id: "mood", name: "Ambiance", icon: Volume2, desc: "Humeur" },
+    83→  { id: "details", name: "Détails", icon: FileMusic, desc: "Personnaliser" },
+    84→  { id: "generate", name: "Studio IA", icon: Wand2, desc: "Générer" },
+    85→];
+    86→
+    87→// ===== GENERATION STAGES =====
+    88→const generationStages = [
+    89→  { id: "lyrics", name: "Paroles IA", icon: PenTool, duration: 3000, progress: 15 },
+    90→  { id: "composition", name: "Composition", icon: Music, duration: 2500, progress: 30 },
+    91→  { id: "voice", name: "Voix & Audio", icon: Mic, duration: 4000, progress: 55 },
+    92→  { id: "cover", name: "Pochette IA", icon: Palette, duration: 5000, progress: 80 },
+    93→  { id: "master", name: "Mix & Master", icon: Disc3, duration: 2000, progress: 95 },
+    94→];
+    95→
+    96→// ===== STEP COMPONENTS =====
+    97→function StyleStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    98→  return (
+    99→    <div className="space-y-4">
+   100→      <div className="text-center mb-8">
+   101→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-4">
+   102→          <Music className="w-4 h-4 text-purple-400" />
+   103→          <span className="text-sm text-purple-300">Étape 1/4</span>
+   104→        </motion.div>
+   105→        <h2 className="text-3xl font-bold text-white">Choisis ton style</h2>
+   106→        <p className="text-slate-400 mt-2">Le genre musical qui définit ton son</p>
+   107→      </div>
+   108→      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+   109→        {musicStyles.map((style, i) => (
+   110→          <motion.button
+   111→            key={style.id}
+   112→            initial={{ opacity: 0, y: 20 }}
+   113→            animate={{ opacity: 1, y: 0 }}
+   114→            transition={{ delay: i * 0.05 }}
+   115→            whileHover={{ scale: 1.03, y: -2 }}
+   116→            whileTap={{ scale: 0.97 }}
+   117→            onClick={() => onChange(style.id)}
+   118→            className={cn(
+   119→              "glass p-4 rounded-xl text-center transition-all cursor-pointer group",
+   120→              value === style.id
+   121→                ? "border-purple-500/50 bg-purple-500/10 ring-2 ring-purple-500/30 shadow-lg shadow-purple-500/10"
+   122→                : "hover:border-purple-500/20 hover:bg-white/[0.02]"
+   123→            )}
+   124→          >
+   125→            <span className="text-3xl block mb-2 group-hover:scale-110 transition-transform">{style.emoji}</span>
+   126→            <p className={cn("text-sm font-semibold", value === style.id ? "text-purple-300" : "text-white")}>
+   127→              {style.name}
+   128→            </p>
+   129→            <p className="text-[10px] text-slate-500 mt-1">{style.desc}</p>
+   130→          </motion.button>
+   131→        ))}
+   132→      </div>
+   133→    </div>
+   134→  );
+   135→}
+   136→
+   137→function ThemeStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+   138→  return (
+   139→    <div className="space-y-4">
+   140→      <div className="text-center mb-8">
+   141→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-500/10 border border-pink-500/20 mb-4">
+   142→          <PenTool className="w-4 h-4 text-pink-400" />
+   143→          <span className="text-sm text-pink-300">Étape 2/4</span>
+   144→        </motion.div>
+   145→        <h2 className="text-3xl font-bold text-white">Décris ta vision</h2>
+   146→        <p className="text-slate-400 mt-2">Quel message veux-tu transmettre au monde ?</p>
+   147→      </div>
+   148→      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+   149→        {themes.map((theme, i) => (
+   150→          <motion.button
+   151→            key={theme.id}
+   152→            initial={{ opacity: 0, y: 20 }}
+   153→            animate={{ opacity: 1, y: 0 }}
+   154→            transition={{ delay: i * 0.05 }}
+   155→            whileHover={{ scale: 1.03, y: -2 }}
+   156→            whileTap={{ scale: 0.97 }}
+   157→            onClick={() => onChange(theme.id)}
+   158→            className={cn(
+   159→              "glass p-5 rounded-xl text-center transition-all cursor-pointer group",
+   160→              value === theme.id
+   161→                ? "border-pink-500/50 bg-pink-500/10 ring-2 ring-pink-500/30 shadow-lg shadow-pink-500/10"
+   162→                : "hover:border-pink-500/20 hover:bg-white/[0.02]"
+   163→            )}
+   164→          >
+   165→            <span className="text-3xl block mb-2 group-hover:scale-110 transition-transform">{theme.emoji}</span>
+   166→            <p className={cn("text-sm font-semibold", value === theme.id ? "text-pink-300" : "text-white")}>
+   167→              {theme.name}
+   168→            </p>
+   169→          </motion.button>
+   170→        ))}
+   171→      </div>
+   172→    </div>
+   173→  );
+   174→}
+   175→
+   176→function MoodStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+   177→  return (
+   178→    <div className="space-y-4">
+   179→      <div className="text-center mb-8">
+   180→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 mb-4">
+   181→          <Volume2 className="w-4 h-4 text-amber-400" />
+   182→          <span className="text-sm text-amber-300">Étape 3/4</span>
+   183→        </motion.div>
+   184→        <h2 className="text-3xl font-bold text-white">Quelle ambiance ?</h2>
+   185→        <p className="text-slate-400 mt-2">L&apos;humeur guide le style de l&apos;IA</p>
+   186→      </div>
+   187→      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+   188→        {moods.map((mood, i) => (
+   189→          <motion.button
+   190→            key={mood.id}
+   191→            initial={{ opacity: 0, y: 20 }}
+   192→            animate={{ opacity: 1, y: 0 }}
+   193→            transition={{ delay: i * 0.05 }}
+   194→            whileHover={{ scale: 1.03, y: -2 }}
+   195→            whileTap={{ scale: 0.97 }}
+   196→            onClick={() => onChange(mood.id)}
+   197→            className={cn(
+   198→              "glass p-6 rounded-xl text-center transition-all cursor-pointer group",
+   199→              value === mood.id
+   200→                ? "border-amber-500/50 bg-amber-500/10 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10"
+   201→                : "hover:border-amber-500/20 hover:bg-white/[0.02]"
+   202→            )}
+   203→          >
+   204→            <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${mood.color} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+   205→              <span className="text-2xl">{mood.emoji}</span>
+   206→            </div>
+   207→            <p className={cn("text-sm font-semibold", value === mood.id ? "text-amber-300" : "text-white")}>
+   208→              {mood.name}
+   209→            </p>
+   210→          </motion.button>
+   211→        ))}
+   212→      </div>
+   213→    </div>
+   214→  );
+   215→}
+   216→
+   217→function CustomizeStep({
+   218→  title,
+   219→  onTitleChange,
+   220→  additionalPrompt,
+   221→  onAdditionalPromptChange,
+   222→}: {
+   223→  title: string;
+   224→  onTitleChange: (v: string) => void;
+   225→  additionalPrompt: string;
+   226→  onAdditionalPromptChange: (v: string) => void;
+   227→}) {
+   228→  return (
+   229→    <div className="space-y-6">
+   230→      <div className="text-center mb-8">
+   231→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
+   232→          <FileMusic className="w-4 h-4 text-emerald-400" />
+   233→          <span className="text-sm text-emerald-300">Étape 4/4</span>
+   234→        </motion.div>
+   235→        <h2 className="text-3xl font-bold text-white">Personnalise ta chanson</h2>
+   236→        <p className="text-slate-400 mt-2">Les détails finaux avant que l&apos;IA crée ton hit</p>
+   237→      </div>
+   238→
+   239→      <div className="max-w-lg mx-auto space-y-5">
+   240→        <div className="space-y-2">
+   241→          <Label className="text-slate-300 text-sm">Titre de la chanson *</Label>
+   242→          <Input
+   243→            placeholder="Ex: Rêves d'Afrique"
+   244→            value={title}
+   245→            onChange={(e) => onTitleChange(e.target.value)}
+   246→            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-purple-500/50 h-12 text-lg"
+   247→          />
+   248→        </div>
+   249→
+   250→        <div className="space-y-2">
+   251→          <Label className="text-slate-300 text-sm">Instructions supplémentaires (optionnel)</Label>
+   252→          <Textarea
+   253→            placeholder="Décris des détails spécifiques : tempo, instruments, références d'artistes, langues à mélanger..."
+   254→            value={additionalPrompt}
+   255→            onChange={(e) => onAdditionalPromptChange(e.target.value)}
+   256→            rows={4}
+   257→            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-purple-500/50 resize-none"
+   258→          />
+   259→        </div>
+   260→
+   261→        <div className="glass p-4 rounded-xl space-y-3">
+   262→          <p className="text-xs font-semibold text-purple-300 uppercase tracking-wider">Ce que l&apos;IA va créer</p>
+   263→          <div className="grid grid-cols-2 gap-2">
+   264→            {[
+   265→              { icon: PenTool, label: "Paroles originales", color: "text-pink-400" },
+   266→              { icon: Music, label: "Composition musicale", color: "text-purple-400" },
+   267→              { icon: Mic, label: "Voix & Audio IA", color: "text-amber-400" },
+   268→              { icon: Palette, label: "Pochette album", color: "text-emerald-400" },
+   269→            ].map((item, i) => (
+   270→              <div key={i} className="flex items-center gap-2 text-sm">
+   271→                <item.icon className={`w-4 h-4 ${item.color}`} />
+   272→                <span className="text-slate-300">{item.label}</span>
+   273→              </div>
+   274→            ))}
+   275→          </div>
+   276→          <p className="text-[10px] text-slate-500">Coût: 7 crédits • ~30 secondes</p>
+   277→        </div>
+   278→      </div>
+   279→    </div>
+   280→  );
+   281→}
+   282→
+   283→function GeneratingStep({ progress, status, currentStage }: { progress: number; status: string; currentStage: number }) {
+   284→  return (
+   285→    <div className="space-y-8 text-center">
+   286→      <motion.div
+   287→        initial={{ scale: 0.8, opacity: 0 }}
+   288→        animate={{ scale: 1, opacity: 1 }}
+   289→        className="relative w-40 h-40 mx-auto"
+   290→      >
+   291→        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 animate-pulse" />
+   292→        <div className="absolute inset-2 rounded-full bg-gradient-to-br from-purple-600/20 to-pink-600/20 animate-pulse" style={{ animationDelay: "0.5s" }} />
+   293→        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-purple-700/30 to-pink-700/30 flex items-center justify-center">
+   294→          <Sparkles className="w-14 h-14 text-purple-400 animate-pulse" />
+   295→        </div>
+   296→      </motion.div>
+   297→
+   298→      <div>
+   299→        <h2 className="text-3xl font-bold text-white mb-3">Le studio IA travaille...</h2>
+   300→        <p className="text-slate-400 text-lg">{status}</p>
+   301→      </div>
+   302→
+   303→      {/* Generation stages tracker */}
+   304→      <div className="max-w-md mx-auto space-y-3">
+   305→        {generationStages.map((stage, i) => (
+   306→          <div key={stage.id} className="flex items-center gap-3">
+   307→            <div className={cn(
+   308→              "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+   309→              i < currentStage ? "bg-emerald-500/20" :
+   310→              i === currentStage ? "bg-purple-500/20 animate-pulse" :
+   311→              "bg-white/5"
+   312→            )}>
+   313→              {i < currentStage ? (
+   314→                <Check className="w-4 h-4 text-emerald-400" />
+   315→              ) : i === currentStage ? (
+   316→                <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+   317→              ) : (
+   318→                <stage.icon className="w-4 h-4 text-slate-500" />
+   319→              )}
+   320→            </div>
+   321→            <div className="flex-1">
+   322→              <p className={cn(
+   323→                "text-sm font-medium",
+   324→                i < currentStage ? "text-emerald-300" :
+   325→                i === currentStage ? "text-purple-300" :
+   326→                "text-slate-500"
+   327→              )}>
+   328→                {stage.name}
+   329→              </p>
+   330→              {i === currentStage && (
+   331→                <div className="h-1 bg-white/5 rounded-full mt-1 overflow-hidden">
+   332→                  <motion.div
+   333→                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+   334→                    initial={{ width: "0%" }}
+   335→                    animate={{ width: `${((progress - (stage.progress - 15)) / 15) * 100}%` }}
+   336→                  />
+   337→                </div>
+   338→              )}
+   339→            </div>
+   340→          </div>
+   341→        ))}
+   342→      </div>
+   343→
+   344→      <div className="max-w-sm mx-auto">
+   345→        <Progress value={progress} className="h-2 bg-white/5 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-pink-500" />
+   346→        <p className="text-xs text-slate-500 mt-2">{progress}% — Ne ferme pas la page</p>
+   347→      </div>
+   348→    </div>
+   349→  );
+   350→}
+   351→
+   352→function ResultStep({
+   353→  songTitle,
+   354→  style,
+   355→  songId,
+   356→  coverUrl,
+   357→  audioUrl,
+   358→  lyrics,
+   359→  duration,
+   360→}: {
+   361→  songTitle: string;
+   362→  style: string;
+   363→  songId: string;
+   364→  coverUrl: string;
+   365→  audioUrl: string;
+   366→  lyrics: string;
+   367→  duration: number;
+   368→}) {
+   369→  const router = useRouter();
+   370→  const [isPlaying, setIsPlaying] = useState(false);
+   371→  const audioRef = useRef<HTMLAudioElement | null>(null);
+   372→  const [currentTime, setCurrentTime] = useState(0);
+   373→
+   374→  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+   375→
+   376→  useEffect(() => {
+   377→    if (audioUrl && audioRef.current) {
+   378→      audioRef.current.src = audioUrl;
+   379→    }
+   380→  }, [audioUrl]);
+   381→
+   382→  const togglePlay = () => {
+   383→    if (!audioRef.current) return;
+   384→    if (isPlaying) {
+   385→      audioRef.current.pause();
+   386→    } else {
+   387→      audioRef.current.play().catch(() => toast.error("Audio non disponible"));
+   388→    }
+   389→    setIsPlaying(!isPlaying);
+   390→  };
+   391→
+   392→  const handleDownload = () => {
+   393→    if (audioUrl) {
+   394→      const a = document.createElement("a");
+   395→      a.href = audioUrl;
+   396→      a.download = `${songTitle}.mp3`;
+   397→      a.click();
+   398→      toast.success("Téléchargement lancé !");
+   399→    } else {
+   400→      toast.info("Audio en préparation...");
+   401→    }
+   402→  };
+   403→
+   404→  const handleShare = () => {
+   405→    const url = `${window.location.origin}/song/${songId}`;
+   406→    navigator.clipboard?.writeText(url);
+   407→    toast.success("Lien copié ! 🎵");
+   408→  };
+   409→
+   410→  const durationMin = formatTime(duration);
+   411→
+   412→  return (
+   413→    <div className="space-y-6">
+   414→      <div className="text-center mb-4">
+   415→        <motion.div
+   416→          initial={{ scale: 0 }}
+   417→          animate={{ scale: 1 }}
+   418→          transition={{ type: "spring", duration: 0.6 }}
+   419→          className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4 glow-green"
+   420→        >
+   421→          <Check className="w-10 h-10 text-emerald-400" />
+   422→        </motion.div>
+   423→        <h2 className="text-3xl font-bold text-white">Ta chanson est prête ! 🎵</h2>
+   424→        <p className="text-slate-400 mt-2">Écoute, télécharge ou partage ta création</p>
+   425→      </div>
+   426→
+   427→      <Card className="glass p-6 max-w-lg mx-auto">
+   428→        {/* Cover art */}
+   429→        <div className="w-full aspect-square rounded-xl overflow-hidden mb-4 relative">
+   430→          {coverUrl && !coverUrl.startsWith("/covers/") ? (
+   431→            <img src={coverUrl} alt={songTitle} className="w-full h-full object-cover" />
+   432→          ) : (
+   433→            <div className="w-full h-full bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-amber-500/20 flex items-center justify-center">
+   434→              <Music className="w-20 h-20 text-white/40" />
+   435→            </div>
+   436→          )}
+   437→          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+   438→          <div className="absolute bottom-4 left-4 right-4">
+   439→            <p className="text-white font-bold text-xl">{songTitle}</p>
+   440→            <p className="text-white/70 text-sm">{style}</p>
+   441→          </div>
+   442→        </div>
+   443→
+   444→        {/* Real Audio Player */}
+   445→        <div className="bg-white/5 rounded-lg p-4 flex items-center gap-3 mb-4">
+   446→          <audio
+   447→            ref={audioRef}
+   448→            onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
+   449→            onEnded={() => setIsPlaying(false)}
+   450→          />
+   451→          <Button
+   452→            size="icon"
+   453→            className="w-12 h-12 rounded-full btn-gradient text-white flex-shrink-0"
+   454→            onClick={togglePlay}
+   455→          >
+   456→            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+   457→          </Button>
+   458→          <div className="flex-1">
+   459→            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+   460→              <motion.div
+   461→                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+   462→                style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%" }}
+   463→              />
+   464→            </div>
+   465→            <div className="flex justify-between mt-1.5">
+   466→              <span className="text-[11px] text-slate-400">{formatTime(currentTime)}</span>
+   467→              <span className="text-[11px] text-slate-400">{durationMin}</span>
+   468→            </div>
+   469→          </div>
+   470→        </div>
+   471→
+   472→        {/* Lyrics preview */}
+   473→        {lyrics && (
+   474→          <div className="bg-white/5 rounded-lg p-4 mb-4 max-h-40 overflow-y-auto">
+   475→            <p className="text-[10px] font-semibold text-purple-300 uppercase tracking-wider mb-2">Paroles</p>
+   476→            <p className="text-sm text-slate-300 whitespace-pre-line leading-relaxed">{lyrics.substring(0, 300)}{lyrics.length > 300 ? "..." : ""}</p>
+   477→          </div>
+   478→        )}
+   479→
+   480→        {/* Actions */}
+   481→        <div className="grid grid-cols-3 gap-2">
+   482→          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 flex-col gap-1 h-auto py-3" onClick={handleDownload}>
+   483→            <Download className="w-4 h-4" />
+   484→            <span className="text-[10px]">Télécharger</span>
+   485→          </Button>
+   486→          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 flex-col gap-1 h-auto py-3" onClick={handleShare}>
+   487→            <Share2 className="w-4 h-4" />
+   488→            <span className="text-[10px]">Partager</span>
+   489→          </Button>
+   490→          <Button variant="ghost" className="text-slate-400 hover:text-pink-400 hover:bg-pink-500/5 flex-col gap-1 h-auto py-3" onClick={() => toast.success("Ajouté aux favoris ! ❤️")}>
+   491→            <Heart className="w-4 h-4" />
+   492→            <span className="text-[10px]">Favoris</span>
+   493→          </Button>
+   494→        </div>
+   495→      </Card>
+   496→
+   497→      <div className="flex items-center justify-center gap-3">
+   498→        <Button
+   499→          variant="outline"
+   500→          className="border-white/10 text-white hover:bg-white/5"
+   501→          onClick={() => router.push(`/song/${songId}`)}
+   502→        >
+   503→          Voir ma chanson
+   504→        </Button>
+   505→        <Button
+   506→          className="btn-gradient text-white font-bold"
+   507→          onClick={() => router.push("/create")}
+   508→        >
+   509→          <PlusCircle className="w-4 h-4 mr-2" />
+   510→          Créer encore
+   511→        </Button>
+   512→      </div>
+   513→    </div>
+   514→  );
+   515→}
+   516→
+   517→// ===== MAIN CREATE PAGE =====
+   518→export function CreateFlowClient() {
+   519→  const router = useRouter();
+   520→  const { data: session } = useSession();
+   521→  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+   522→  const [step, setStep] = useState(0);
+   523→  const [style, setStyle] = useState("");
+   524→  const [theme, setTheme] = useState("");
+   525→  const [mood, setMood] = useState("");
+   526→  const [title, setTitle] = useState("");
+   527→  const [additionalPrompt, setAdditionalPrompt] = useState("");
+   528→  const [generating, setGenerating] = useState(false);
+   529→  const [progress, setProgress] = useState(0);
+   530→  const [statusText, setStatusText] = useState("");
+   531→  const [currentStage, setCurrentStage] = useState(0);
+   532→  const [songId, setSongId] = useState<string | null>(null);
+   533→  const [coverUrl, setCoverUrl] = useState("");
+   534→  const [audioUrl, setAudioUrl] = useState("");
+   535→  const [lyrics, setLyrics] = useState("");
+   536→  const [duration, setDuration] = useState(180);
+   537→  const [credits, setCredits] = useState<number | null>(null);
+   538→  const abortRef = useRef(false);
+   539→
+   540→  const userId = (session?.user as any)?.id as string | undefined;
+   541→  const userName = session?.user?.name || "Créateur";
+   542→  const userPlan = (session?.user as any)?.plan || "decouverte";
+   543→
+   544→  // Fetch user credits
+   545→  useEffect(() => {
+   546→    if (userId) {
+   547→      fetch(`/api/me/credits?userId=${userId}`)
+   548→        .then((r) => r.json())
+   549→        .then((data) => {
+   550→          if (data.credits) setCredits(data.credits.credits);
+   551→        })
+   552→        .catch(() => {});
+   553→    }
+   554→  }, [userId]);
+   555→
+   556→  const canNext = () => {
+   557→    switch (step) {
+   558→      case 0: return !!style;
+   559→      case 1: return !!theme;
+   560→      case 2: return !!mood;
+   561→      case 3: return !!title.trim();
+   562→      default: return false;
+   563→    }
+   564→  };
+   565→
+   566→  const handleNext = () => {
+   567→    if (step < 3) {
+   568→      setStep(step + 1);
+   569→    } else if (step === 3) {
+   570→      if (!userId) {
+   571→        toast.error("Tu dois être connecté pour générer une chanson");
+   572→        return;
+   573→      }
+   574→
+   575→      if (credits !== null && credits < 7) {
+   576→        toast.error("Crédits insuffisants. Passe à un plan supérieur.");
+   577→        router.push("/subscription");
+   578→        return;
+   579→      }
+   580→
+   581→      // Start generation
+   582→      setStep(4);
+   583→      setGenerating(true);
+   584→      setProgress(0);
+   585→      setStatusText("Analyse de ta demande...");
+   586→      setCurrentStage(0);
+   587→      abortRef.current = false;
+   588→
+   589→      // Show generation stages progressively
+   590→      let elapsed = 0;
+   591→      generationStages.forEach((stage, i) => {
+   592→        elapsed += stage.duration;
+   593→        setTimeout(() => {
+   594→          if (!abortRef.current) {
+   595→            setCurrentStage(i);
+   596→            setProgress(stage.progress);
+   597→            setStatusText(`${stage.name} en cours...`);
+   598→          }
+   599→        }, elapsed - stage.duration);
+   600→      });
+   601→
+   602→      // Call the real AI generation API
+   603→      fetch("/api/generate", {
+   604→        method: "POST",
+   605→        headers: { "Content-Type": "application/json" },
+   606→        body: JSON.stringify({
+   607→          userId,
+   608→          style,
+   609→          theme,
+   610→          mood,
+   611→          title,
+   612→          language: "fr",
+   613→          additionalPrompt,
+   614→          generateCover: true,
+   615→          generateAudio: true,
+   616→        }),
+   617→      })
+   618→        .then((res) => res.json())
+   619→        .then((data) => {
+   620→          if (abortRef.current) return;
+   621→
+   622→          if (data.error) {
+   623→            toast.error(data.error);
+   624→            setStep(3);
+   625→            setGenerating(false);
+   626→            return;
+   627→          }
+   628→
+   629→          // Complete all stages
+   630→          setCurrentStage(generationStages.length);
+   631→          setProgress(100);
+   632→          setStatusText("Ta chanson est prête !");
+   633→
+   634→          setTimeout(() => {
+   635→            if (abortRef.current) return;
+   636→            setGenerating(false);
+   637→            setSongId(data.song.id);
+   638→            setCoverUrl(data.song.coverUrl);
+   639→            setAudioUrl(data.song.audioUrl);
+   640→            setLyrics(data.song.lyrics || "");
+   641→            setDuration(data.song.duration || 180);
+   642→            setStep(5);
+   643→            toast.success("Ta chanson est prête ! 🎵");
+   644→          }, 800);
+   645→        })
+   646→        .catch((err) => {
+   647→          if (abortRef.current) return;
+   648→          console.error("Generation fetch error:", err);
+   649→          toast.error("Erreur lors de la génération. Réessaie.");
+   650→          setStep(3);
+   651→          setGenerating(false);
+   652→        });
+   653→    }
+   654→  };
+   655→
+   656→  const handleBack = () => {
+   657→    if (step > 0 && step < 5) setStep(step - 1);
+   658→  };
+   659→
+   660→  return (
+   661→    <div className="min-h-screen bg-[#0B0B14]">
+   662→      <Sidebar
+   663→        collapsed={sidebarCollapsed}
+   664→        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+   665→        userPlan={userPlan}
+   666→        songsRemaining={credits ? Math.floor(credits / 7) : 3}
+   667→        songsTotal={credits ? Math.floor(credits / 7) : 3}
+   668→      />
+   669→
+   670→      <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+   671→        <Header title="Studio de création" userName={userName} userPlan={userPlan} />
+   672→
+   673→        <div className="p-6 max-w-5xl mx-auto">
+   674→          {/* Studio Pipeline Header */}
+   675→          {step < 5 && (
+   676→            <div className="mb-10">
+   677→              {/* Pipeline visualization */}
+   678→              <div className="flex items-center justify-between mb-2">
+   679→                {pipelineSteps.map((s, i) => {
+   680→                  const Icon = s.icon;
+   681→                  return (
+   682→                    <div key={s.id} className="flex items-center flex-1 last:flex-none">
+   683→                      <div className="flex flex-col items-center">
+   684→                        <motion.div
+   685→                          whileHover={{ scale: 1.05 }}
+   686→                          className={cn(
+   687→                            "w-12 h-12 rounded-xl flex items-center justify-center transition-all cursor-pointer",
+   688→                            i < step ? "bg-emerald-500/20 border border-emerald-500/30" :
+   689→                            i === step ? "btn-gradient shadow-lg shadow-purple-500/20" :
+   690→                            "bg-white/5 border border-white/5"
+   691→                          )}
+   692→                          onClick={() => i < step && setStep(i)}
+   693→                        >
+   694→                          {i < step ? (
+   695→                            <Check className="w-5 h-5 text-emerald-400" />
+   696→                          ) : (
+   697→                            <Icon className={cn("w-5 h-5", i === step ? "text-white" : "text-slate-500")} />
+   698→                          )}
+   699→                        </motion.div>
+   700→                        <p className={cn(
+   701→                          "text-[10px] mt-2 font-medium",
+   702→                          i <= step ? "text-white" : "text-slate-500"
+   703→                        )}>
+   704→                          {s.name}
+   705→                        </p>
+   706→                      </div>
+   707→                      {i < pipelineSteps.length - 1 && (
+   708→                        <div className={cn(
+   709→                          "flex-1 h-px mx-3 mt-[-12px]",
+   710→                          i < step ? "bg-emerald-500/30" : "bg-white/5"
+   711→                        )} />
+   712→                      )}
+   713→                    </div>
+   714→                  );
+   715→                })}
+   716→              </div>
+   717→            </div>
+   718→          )}
+   719→
+   720→          {/* Credits indicator */}
+   721→          {credits !== null && step < 5 && (
+   722→            <div className="flex items-center justify-end mb-4">
+   723→              <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/5">
+   724→                <Sparkles className="w-3 h-3 mr-1" />
+   725→                {credits} crédits
+   726→              </Badge>
+   727→            </div>
+   728→          )}
+   729→
+   730→          {/* Step content */}
+   731→          <AnimatePresence mode="wait">
+   732→            <motion.div
+   733→              key={step}
+   734→              initial={{ opacity: 0, x: 30 }}
+   735→              animate={{ opacity: 1, x: 0 }}
+   736→              exit={{ opacity: 0, x: -30 }}
+   737→              transition={{ duration: 0.3 }}
+   738→            >
+   739→              {step === 0 && <StyleStep value={style} onChange={setStyle} />}
+   740→              {step === 1 && <ThemeStep value={theme} onChange={setTheme} />}
+   741→              {step === 2 && <MoodStep value={mood} onChange={setMood} />}
+   742→              {step === 3 && (
+   743→                <CustomizeStep
+   744→                  title={title}
+   745→                  onTitleChange={setTitle}
+   746→                  additionalPrompt={additionalPrompt}
+   747→                  onAdditionalPromptChange={setAdditionalPrompt}
+   748→                />
+   749→              )}
+   750→              {step === 4 && (
+   751→                <GeneratingStep
+   752→                  progress={progress}
+   753→                  status={statusText}
+   754→                  currentStage={currentStage}
+   755→                />
+   756→              )}
+   757→              {step === 5 && songId && (
+   758→                <ResultStep
+   759→                  songTitle={title}
+   760→                  style={musicStyles.find(s => s.id === style)?.name || style}
+   761→                  songId={songId}
+   762→                  coverUrl={coverUrl}
+   763→                  audioUrl={audioUrl}
+   764→                  lyrics={lyrics}
+   765→                  duration={duration}
+   766→                />
+   767→              )}
+   768→            </motion.div>
+   769→          </AnimatePresence>
+   770→
+   771→          {/* Navigation buttons */}
+   772→          {step < 5 && step !== 4 && (
+   773→            <div className="flex items-center justify-between mt-10 pt-6 border-t border-white/5">
+   774→              <Button
+   775→                variant="ghost"
+   776→                onClick={handleBack}
+   777→                disabled={step === 0}
+   778→                className="text-slate-400 hover:text-white hover:bg-white/5"
+   779→              >
+   780→                <ArrowLeft className="w-4 h-4 mr-2" />
+   781→                Retour
+   782→              </Button>
+   783→
+   784→              <Button
+   785→                onClick={handleNext}
+   786→                disabled={!canNext()}
+   787→                className="btn-gradient text-white font-bold shadow-lg shadow-purple-500/25 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 px-8"
+   788→              >
+   789→                {step === 3 ? (
+   790→                  <>
+   791→                    <Sparkles className="w-4 h-4 mr-2" />
+   792→                    Lancer le studio IA
+   793→                  </>
+   794→                ) : (
+   795→                  <>
+   796→                    Suivant
+   797→                    <ArrowRight className="w-4 h-4 ml-2" />
+   798→                  </>
+   799→                )}
+   800→              </Button>
+   801→            </div>
+   802→          )}
+   803→        </div>
+   804→      </main>
+   805→    </div>
+   806→  );
+   807→}
+   808→

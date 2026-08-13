@@ -28,6 +28,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = generateSchema.parse(body);
 
+    // ============ DB CONNECTION CHECK ============
+    const dbUrl = process.env.DATABASE_URL || "";
+    if (!dbUrl.startsWith("postgresql") && !dbUrl.startsWith("postgres")) {
+      console.error("[generate] Invalid DATABASE_URL:", dbUrl.substring(0, 30) + "...");
+      return NextResponse.json(
+        { error: "Configuration base de données invalide. Contacte le support." },
+        { status: 500 }
+      );
+    }
+
     // ============ CHECK CREDITS ============
     const credits = await db.userCredits.findUnique({
       where: { userId: data.userId },
@@ -263,9 +273,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("Generate error:", error);
+    console.error("[generate] Error:", error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Erreur lors de la génération. Réessaie." },
+      { error: "Erreur lors de la génération: " + errorMsg },
       { status: 500 }
     );
   }

@@ -56,3 +56,6 @@ server.log
 # Upload directory (may contain secrets)
 /upload/tool-results/
 .github/workflows/
+
+# Uploaded files (may contain secrets)
+/upload/

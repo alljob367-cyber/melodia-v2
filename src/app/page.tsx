@@ -69,15 +69,12 @@ function Header() {
 
           {/* Nav */}
           <nav className="hidden lg:flex items-center gap-6">
-            {["Accueil", "Fonctionnalités", "Tarifs", "À propos", "FAQ", "Blog"].map((item) => (
-              <a
-                key={item}
-                href="#"
-                className="text-sm text-zinc-400 hover:text-white transition-colors"
-              >
-                {item}
-              </a>
-            ))}
+            <a href="#accueil" className="text-sm text-zinc-400 hover:text-white transition-colors">Accueil</a>
+            <a href="#fonctionnalites" className="text-sm text-zinc-400 hover:text-white transition-colors">Fonctionnalités</a>
+            <a href="#tarifs" className="text-sm text-zinc-400 hover:text-white transition-colors">Tarifs</a>
+            <a href="#a-propos" className="text-sm text-zinc-400 hover:text-white transition-colors">À propos</a>
+            <a href="#faq" className="text-sm text-zinc-400 hover:text-white transition-colors">FAQ</a>
+            <a href="#blog" className="text-sm text-zinc-400 hover:text-white transition-colors">Blog</a>
           </nav>
 
           {/* Right */}
@@ -102,7 +99,7 @@ function Header() {
 // ===== HERO SECTION =====
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
+    <section id="accueil" className="relative min-h-screen flex items-center overflow-hidden pt-16">
       {/* Background */}
       <div className="absolute inset-0 bg-[#0a0a0f]" />
       <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-purple-600/15 blur-[150px]" />
@@ -242,7 +239,7 @@ function FeatureBanner() {
   ];
 
   return (
-    <section className="relative bg-[#0a0a0f] border-y border-white/5">
+    <section id="fonctionnalites" className="relative bg-[#0a0a0f] border-y border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feat, i) => (
@@ -330,7 +327,7 @@ function FeaturesGrid() {
   ];
 
   return (
-    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+    <section id="a-propos" className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
@@ -435,7 +432,7 @@ function Pricing() {
   ];
 
   return (
-    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+    <section id="tarifs" className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-12 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
@@ -548,7 +545,7 @@ function Testimonials() {
   ];
 
   return (
-    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+    <section id="blog" className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
@@ -619,7 +616,7 @@ function FAQSection() {
   ];
 
   return (
-    <section className="relative bg-[#0a0a0f] py-20 lg:py-28">
+    <section id="faq" className="relative bg-[#0a0a0f] py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16 scroll-mt-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">

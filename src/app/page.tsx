@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Music,
@@ -30,15 +30,29 @@ import {
   Facebook,
   Instagram,
   Youtube,
+  Globe,
+  LogIn,
+  Wand2,
+  Mail,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // ===== ANIMATION VARIANTS =====
 const fadeUp = {
@@ -52,12 +66,17 @@ const stagger = {
 
 // ===== HEADER =====
 function Header() {
+  const [langOpen, setLangOpen] = useState(false);
+  const [lang, setLang] = useState("FR");
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2">
+          <a href="#accueil" className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <Music2 className="w-5 h-5 text-white" />
             </div>
@@ -65,7 +84,7 @@ function Header() {
               <span className="text-white font-bold text-lg tracking-wide">MELODIA</span>
               <span className="text-[10px] text-purple-400 font-medium tracking-wider uppercase">UP TO AFRICA</span>
             </div>
-          </div>
+          </a>
 
           {/* Nav */}
           <nav className="hidden lg:flex items-center gap-6">
@@ -79,16 +98,106 @@ function Header() {
 
           {/* Right */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1 text-sm text-zinc-400 border border-white/10 rounded px-2 py-1 cursor-pointer hover:border-white/20 transition-colors">
-              <span>FR</span>
-              <ChevronDown className="w-3 h-3" />
+            {/* Language Selector */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center gap-1.5 text-sm text-zinc-400 border border-white/10 rounded-lg px-3 py-1.5 hover:border-white/20 hover:text-white transition-colors"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>{lang}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${langOpen ? "rotate-180" : ""}`} />
+              </button>
+              {langOpen && (
+                <div className="absolute top-full right-0 mt-2 bg-[#12121a] border border-white/10 rounded-xl overflow-hidden shadow-xl z-50 min-w-[120px]">
+                  {[
+                    { code: "FR", label: "Français" },
+                    { code: "EN", label: "English" },
+                    { code: "AR", label: "العربية" },
+                  ].map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => { setLang(l.code); setLangOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors ${lang === l.code ? "text-purple-400 bg-purple-500/5" : "text-zinc-400"}`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <Button variant="outline" className="hidden sm:inline-flex border-white/10 text-zinc-300 hover:text-white hover:border-white/20 text-sm">
-              Se connecter
-            </Button>
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm border-0 shadow-lg shadow-purple-500/25">
-              ✨ Créer ma chanson
-            </Button>
+
+            {/* Se connecter */}
+            <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="hidden sm:inline-flex border-white/10 text-zinc-300 hover:text-white hover:border-white/20 text-sm gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Se connecter
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-white text-xl">Se connecter</DialogTitle>
+                  <DialogDescription className="text-zinc-400">Accédez à ton compte Melodia</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-300 flex items-center gap-2"><Mail className="w-4 h-4" /> Email</label>
+                    <Input placeholder="ton@email.com" className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-300 flex items-center gap-2"><Lock className="w-4 h-4" /> Mot de passe</label>
+                    <Input type="password" placeholder="••••••••" className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600" />
+                  </div>
+                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-5 rounded-xl border-0">
+                    Se connecter
+                  </Button>
+                  <p className="text-center text-xs text-zinc-500">Pas encore de compte ? <span className="text-purple-400 cursor-pointer hover:underline">Créer un compte</span></p>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Créer ma chanson */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm border-0 shadow-lg shadow-purple-500/25 gap-2">
+                  <Wand2 className="w-4 h-4" />
+                  Créer ma chanson
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#12121a] border border-white/10 text-white sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-white text-xl flex items-center gap-2">
+                    <Wand2 className="w-5 h-5 text-purple-400" />
+                    Créer ma chanson
+                  </DialogTitle>
+                  <DialogDescription className="text-zinc-400">Décris ton idée et laisse l&apos;IA faire la magie</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-300">Décris ta chanson</label>
+                    <textarea
+                      placeholder="Ex: Une chanson afrobeat joyeuse sur l'amour et la danse..."
+                      className="w-full h-24 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-zinc-600 p-3 text-sm resize-none focus:border-purple-500/50 focus:outline-none transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-300">Style musical</label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Afrobeats", "Amapiano", "Afropop", "Rap", "R&B", "Gospel", "Coupe Decale", "Ndombolo"].map((style) => (
+                        <span key={style} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-zinc-300 hover:border-purple-500/30 hover:text-white cursor-pointer transition-colors">
+                          {style}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-5 rounded-xl border-0 gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Générer ma chanson
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
@@ -132,12 +241,16 @@ function HeroSection() {
 
             {/* CTA Buttons */}
             <motion.div variants={fadeUp} className="flex flex-wrap gap-4">
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-base px-8 py-6 border-0 shadow-lg shadow-purple-500/25 rounded-xl">
-                ✨ Créer ma chanson
-              </Button>
-              <Button variant="outline" className="border-white/15 text-zinc-300 hover:text-white hover:border-white/25 text-base px-8 py-6 rounded-xl">
-                ▶ Découvrir Melodia
-              </Button>
+              <a href="#tarifs">
+                <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-base px-8 py-6 border-0 shadow-lg shadow-purple-500/25 rounded-xl">
+                  ✨ Créer ma chanson
+                </Button>
+              </a>
+              <a href="#fonctionnalites">
+                <Button variant="outline" className="border-white/15 text-zinc-300 hover:text-white hover:border-white/25 text-base px-8 py-6 rounded-xl">
+                  ▶ Découvrir Melodia
+                </Button>
+              </a>
             </motion.div>
 
             {/* Social Proof */}
@@ -684,9 +797,11 @@ function BottomCTA() {
           <p className="text-zinc-300 text-lg mb-8 max-w-xl mx-auto">
             Rejoins des milliers de créateurs qui font déjà confiance à Melodia.
           </p>
-          <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-lg px-10 py-6 border-0 shadow-lg shadow-purple-500/30 rounded-xl">
-            ✨ Créer ma chanson maintenant
-          </Button>
+          <a href="#tarifs">
+            <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-lg px-10 py-6 border-0 shadow-lg shadow-purple-500/30 rounded-xl">
+              ✨ Créer ma chanson maintenant
+            </Button>
+          </a>
         </motion.div>
       </div>
     </section>

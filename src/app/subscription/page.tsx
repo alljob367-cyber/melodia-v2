@@ -253,7 +253,7 @@ export default function SubscriptionPage() {
         />
       </div>
 
-      <main className={`transition-all duration-300 lg:${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"} pb-20 lg:pb-0`}>
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[280px]"} pb-20 lg:pb-0`}>
         <Header title="Abonnement" userName="Jean Paul" userPlan="basic" />
 
         <div className="p-4 sm:p-6">

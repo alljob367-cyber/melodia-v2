@@ -156,7 +156,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Mobile: sidebar caché, Bottom Nav visible */}
-      <main className={`transition-all duration-300 lg:${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"} pb-20 lg:pb-0`}>
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[280px]"} pb-20 lg:pb-0`}>
         <Header title="Studio" userName={userName} userPlan={userPlan} />
 
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">

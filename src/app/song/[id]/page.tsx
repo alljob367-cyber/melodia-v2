@@ -180,7 +180,7 @@ export default function SongResultPage() {
         />
       )}
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} userPlan={userPlan} songsRemaining={2} songsTotal={2} />
-      <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[280px]"}`}>
         <Header title={song.title} userName={userName} userPlan={userPlan} />
         <div className="p-6">
           <div className="max-w-4xl mx-auto">

@@ -208,45 +208,211 @@ export async function generateCoverArt(
   };
 }
 
-// ============ AUDIO GENERATION (TTS) ============
+// ============ AUDIO GENERATION (Beat + TTS Voice + Mix) ============
+
+/** Style-to-BPM mapping for beat generation */
+const STYLE_BPM: Record<string, number> = {
+  afrobeat: 120,
+  amapiano: 115,
+  afropop: 105,
+  coupé_décalé: 125,
+  ndombolo: 110,
+  soukous: 130,
+  highlife: 100,
+  rumba: 95,
+  zouk: 108,
+  dancehall: 130,
+  reggae: 80,
+  hiphop: 90,
+  rnb: 85,
+  pop: 120,
+  rock: 130,
+  jazz: 100,
+  gospel: 95,
+  traditional: 100,
+};
+
+/** Generate a synthetic beat (kick + snare + hihat + bass + shaker) for one bar */
+async function generateBeatBar(bpm: number, style: string): Promise<string> {
+  const tmpDir = path.join(OUTPUT_DIR, "audio", `_tmp_${Date.now()}`);
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+  const barFile = path.join(tmpDir, "bar.wav");
+
+  // Style-specific frequency tuning
+  const isAfrican = ["afrobeat","amapiano","afropop","coupé_décalé","ndombolo","soukous","highlife","rumba","zouk","traditional"].includes(style);
+  const kickFreq = isAfrican ? 60 : 65;
+  const bassFreq = isAfrican ? 100 : 110;
+  const shakerVol = isAfrican ? 0.15 : 0.08;
+
+  await execFileAsync("ffmpeg", [
+    "-y",
+    "-f", "lavfi", "-i", `sine=frequency=${kickFreq}:duration=0.12`,
+    "-f", "lavfi", "-i", "anoisesrc=d=0.08:c=pink:r=44100",
+    "-f", "lavfi", "-i", "anoisesrc=d=0.03:c=white:r=44100",
+    "-f", "lavfi", "-i", `sine=frequency=${bassFreq}:duration=0.25`,
+    "-f", "lavfi", "-i", "anoisesrc=d=0.02:c=pink:r=44100",
+    "-filter_complex", [
+      `[0:a]volume=0.8[kick]`,
+      `[1:a]lowpass=f=2500,highpass=f=300,volume=0.5[snare]`,
+      `[2:a]highpass=f=7000,lowpass=f=15000,volume=0.15[hihat]`,
+      `[3:a]volume=0.3[bass]`,
+      `[4:a]bandpass=f=5000:width_type=q:w=2,volume=${shakerVol}[shaker]`,
+      // Beat pattern: Kick on 1,3 | Snare on 2,4 | HiHat on every 8th | Bass on 1,3 | Shaker on off-beats
+      `[kick]adelay=0|0[k1]`,
+      `[kick]adelay=1000|1000[k3]`,
+      `[snare]adelay=500|500[s2]`,
+      `[snare]adelay=1500|1500[s4]`,
+      `[hihat]adelay=0|0[h1]`,
+      `[hihat]adelay=250|250[h2]`,
+      `[hihat]adelay=500|500[h3]`,
+      `[hihat]adelay=750|750[h4]`,
+      `[hihat]adelay=1000|1000[h5]`,
+      `[hihat]adelay=1250|1250[h6]`,
+      `[hihat]adelay=1500|1500[h7]`,
+      `[hihat]adelay=1750|1750[h8]`,
+      `[bass]adelay=0|0[b1]`,
+      `[bass]adelay=1000|1000[b3]`,
+      `[shaker]adelay=250|250[sh1]`,
+      `[shaker]adelay=750|750[sh2]`,
+      `[shaker]adelay=1250|1250[sh3]`,
+      `[shaker]adelay=1750|1750[sh4]`,
+      `[k1][k3][s2][s4][h1][h2][h3][h4][h5][h6][h7][h8][b1][b3][sh1][sh2][sh3][sh4]amix=inputs=18:duration=longest:dropout_transition=0[v]`,
+    ].join(";"),
+    "-map", "[v]", "-t", "2", "-ar", "44100", "-ac", "1", barFile,
+  ], { timeout: 15000 });
+
+  return barFile;
+}
 
 export async function generateAudio(
   lyrics: string,
   style: string,
   title: string
 ): Promise<AudioResult> {
-  // Use TTS to generate audio from the chorus/refrain (most melodic part)
+  const timestamp = Date.now();
+  const tmpDir = path.join(OUTPUT_DIR, "audio", `_tmp_${timestamp}`);
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+  const finalFilename = `audio-${timestamp}.wav`;
+  const finalPath = path.join(OUTPUT_DIR, "audio", finalFilename);
+
+  const bpm = STYLE_BPM[style] || 110;
+
+  // ============ Step 1: Generate beat/instrumental ============
+  console.log(`[audio] Generating ${style} beat at ${bpm} BPM...`);
+  let beatFile = "";
+  try {
+    beatFile = await generateBeatBar(bpm, style);
+  } catch (err) {
+    console.error("[audio] Beat generation failed:", err);
+  }
+
+  // ============ Step 2: Generate TTS voice from lyrics ============
+  // Extract the most melodic parts: verse 1 + refrain (repeated)
   const chorusMatch = lyrics.match(/\[Refrain\]\n([\s\S]*?)(?=\n\[|\n*$)/);
   const verseMatch = lyrics.match(/\[Couplet 1\]\n([\s\S]*?)(?=\n\[|\n*$)/);
-  
-  // Combine verse 1 + chorus for the audio
+
   const verseText = verseMatch ? verseMatch[1].trim() : "";
   const chorusText = chorusMatch ? chorusMatch[1].trim() : "";
-  const audioText = `${verseText}\n\n${chorusText}\n\n${chorusText}`;
-  
-  // If text is too long, truncate
-  const textForTTS = audioText.substring(0, 1000);
+  // Structure: verse -> chorus -> verse -> chorus -> chorus (outro)
+  const audioText = `${verseText}\n\n${chorusText}\n\n${verseText}\n\n${chorusText}\n\n${chorusText}`;
+  const textForTTS = audioText.substring(0, 2000);
 
-  const filename = `audio-${Date.now()}.wav`;
-  const outputPath = path.join(OUTPUT_DIR, "audio", filename);
+  const ttsFile = path.join(tmpDir, "voice.wav");
+  let hasVoice = false;
+  try {
+    console.log(`[audio] Generating TTS voice (${textForTTS.split(/\s+/).length} words)...`);
+    await execFileAsync(ZAI_CLI, [
+      "tts",
+      "--input", textForTTS,
+      "--output", ttsFile,
+      "--format", "wav",
+      "--speed", "0.85",
+    ], { timeout: 120000 });
+    hasVoice = true;
+  } catch (err) {
+    console.error("[audio] TTS generation failed:", err);
+  }
 
-  await execFileAsync(ZAI_CLI, [
-    "tts",
-    "--input", textForTTS,
-    "--output", outputPath,
-    "--format", "wav",
-    "--speed", "0.9",
-  ], { timeout: 120000 });
+  // ============ Step 3: Loop beat to match voice duration, then mix ============
+  if (beatFile && fs.existsSync(beatFile)) {
+    if (hasVoice && fs.existsSync(ttsFile)) {
+      // Mix beat + voice: loop beat to match voice duration
+      console.log("[audio] Mixing beat + voice...");
+      // First get voice duration
+      let voiceDuration = 90;
+      try {
+        const { stdout: probeOut } = await execFileAsync("ffprobe", [
+          "-v", "error", "-show_entries", "format=duration",
+          "-of", "default=noprint_wrappers=1:nokey=1", ttsFile,
+        ], { timeout: 5000 });
+        voiceDuration = Math.round(parseFloat(probeOut.trim())) || 90;
+      } catch {}
+      // Add 3 seconds padding
+      const totalDuration = voiceDuration + 3;
+      
+      await execFileAsync("ffmpeg", [
+        "-y",
+        "-stream_loop", "-1",  // Loop the beat infinitely
+        "-i", beatFile,
+        "-i", ttsFile,
+        "-filter_complex",
+        "[0:a]volume=0.5[beat];[1:a]volume=0.8[voice];[beat][voice]amix=inputs=2:duration=longest:dropout_transition=3[mixed]",
+        "-map", "[mixed]",
+        "-t", String(totalDuration),
+        "-ar", "44100", "-ac", "1",
+        finalPath,
+      ], { timeout: 60000 });
+    } else {
+      // No voice, just loop the beat for 90 seconds
+      console.log("[audio] No voice, looping beat...");
+      await execFileAsync("ffmpeg", [
+        "-y",
+        "-stream_loop", "-1",
+        "-i", beatFile,
+        "-t", "90",
+        "-ar", "44100", "-ac", "1",
+        finalPath,
+      ], { timeout: 15000 });
+    }
+  } else if (hasVoice && fs.existsSync(ttsFile)) {
+    // No beat, just use the voice
+    fs.copyFileSync(ttsFile, finalPath);
+  } else {
+    // Fallback: generate silence
+    await execFileAsync("ffmpeg", [
+      "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
+      "-t", "60", "-ar", "44100", "-ac", "1", finalPath,
+    ], { timeout: 10000 });
+  }
 
-  // Estimate duration based on text length (rough: ~150 words/min for singing)
-  const wordCount = textForTTS.split(/\s+/).length;
-  const duration = Math.round((wordCount / 120) * 60); // seconds
+  // Get actual duration with ffprobe
+  let duration = 90;
+  try {
+    const { stdout: probeOut } = await execFileAsync("ffprobe", [
+      "-v", "error", "-show_entries", "format=duration",
+      "-of", "default=noprint_wrappers=1:nokey=1", finalPath,
+    ], { timeout: 5000 });
+    duration = Math.round(parseFloat(probeOut.trim())) || 90;
+  } catch {}
+
+  // Cleanup temp dir
+  try {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (beatFile) {
+      const beatTmpDir = path.dirname(beatFile);
+      if (beatTmpDir.includes("_tmp_")) fs.rmSync(beatTmpDir, { recursive: true, force: true });
+    }
+  } catch {}
+
+  console.log(`[audio] ✅ Final audio: ${finalFilename} (${duration}s)`);
 
   return {
-    audioPath: outputPath,
-    audioUrl: `/generated/audio/${filename}`,
-    duration: duration || 120,
-    cost: 0.02, // ~$0.02 per TTS generation
+    audioPath: finalPath,
+    audioUrl: `/generated/audio/${finalFilename}`,
+    duration,
+    cost: 0.03,
   };
 }
 

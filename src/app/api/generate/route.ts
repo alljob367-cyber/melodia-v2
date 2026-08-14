@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
     const data = generateSchema.parse(body);
 
     // ============ DB CONNECTION CHECK ============
+    // Support POSTGRES_URL as fallback (Vercel Neon integration)
+    if (!process.env.DATABASE_URL && process.env.POSTGRES_URL) {
+      process.env.DATABASE_URL = process.env.POSTGRES_URL;
+    }
     const dbUrl = process.env.DATABASE_URL || "";
     if (!dbUrl.startsWith("postgresql") && !dbUrl.startsWith("postgres")) {
       console.error("[generate] Invalid DATABASE_URL:", dbUrl.substring(0, 30) + "...");

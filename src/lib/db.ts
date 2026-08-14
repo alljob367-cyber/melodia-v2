@@ -4,6 +4,11 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Resolve DATABASE_URL: support POSTGRES_URL as fallback (Vercel Neon integration)
+if (!process.env.DATABASE_URL && process.env.POSTGRES_URL) {
+  process.env.DATABASE_URL = process.env.POSTGRES_URL;
+}
+
 // Diagnostic: log which DATABASE_URL is being used (only in development, never in production)
 if (process.env.NODE_ENV !== 'production' && !globalForPrisma.prisma) {
   const dbUrl = process.env.DATABASE_URL || "(not set)";

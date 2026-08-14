@@ -214,6 +214,124 @@ export async function generateCoverArt(
 
 // ============ AUDIO GENERATION (Beat + TTS Voice + Mix) ============
 
+// ============ MISTRAL VOXTRAL TTS ============
+/** Generate TTS audio using Mistral Voxtral API (high quality French voices) */
+async function mistralTTS(
+  text: string,
+  outputPath: string,
+  voice: string = "en_paul_happy"
+): Promise<void> {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    throw new Error("MISTRAL_API_KEY not set");
+  }
+
+  // Mistral TTS API: chunk text if too long (max ~2000 chars per request)
+  const MAX_CHUNK = 1800;
+  if (text.length <= MAX_CHUNK) {
+    // Single request
+    const response = await fetch("https://api.mistral.ai/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "voxtral-mini-tts-latest",
+        input: text,
+        voice,
+        response_format: "wav",
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Mistral TTS error (${response.status}): ${err}`);
+    }
+
+    // Response is JSON with base64 audio_data
+    const data = await response.json();
+    if (!data.audio_data) {
+      throw new Error("Mistral TTS: no audio_data in response");
+    }
+    const audioBuffer = Buffer.from(data.audio_data, "base64");
+    fs.writeFileSync(outputPath, audioBuffer);
+    return;
+  }
+
+  // Multi-chunk: split by sentences, generate each, then concat with ffmpeg
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const chunks: string[] = [];
+  let current = "";
+  for (const sentence of sentences) {
+    if ((current + sentence).length > MAX_CHUNK) {
+      if (current) chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current += sentence;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+
+  console.log(`[mistral-tts] Splitting into ${chunks.length} chunks (${text.length} chars total)`);
+
+  const chunkFiles: string[] = [];
+  const tmpChunkDir = path.join(path.dirname(outputPath), `_tts_chunks_${Date.now()}`);
+  if (!fs.existsSync(tmpChunkDir)) fs.mkdirSync(tmpChunkDir, { recursive: true });
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunkFile = path.join(tmpChunkDir, `chunk-${i}.wav`);
+    console.log(`[mistral-tts] Chunk ${i + 1}/${chunks.length}: ${chunks[i].length} chars`);
+    
+    const response = await fetch("https://api.mistral.ai/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "voxtral-mini-tts-latest",
+        input: chunks[i],
+        voice,
+        response_format: "wav",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Mistral TTS chunk ${i + 1} failed (${response.status})`);
+    }
+
+    const data = await response.json();
+    if (!data.audio_data) {
+      throw new Error(`Mistral TTS chunk ${i + 1}: no audio_data`);
+    }
+    const audioBuffer = Buffer.from(data.audio_data, "base64");
+    fs.writeFileSync(chunkFile, audioBuffer);
+    chunkFiles.push(chunkFile);
+  }
+
+  // Concatenate chunks with ffmpeg
+  if (chunkFiles.length === 1) {
+    fs.copyFileSync(chunkFiles[0], outputPath);
+  } else {
+    const concatList = chunkFiles.map(f => `file '${f}'`).join("\n");
+    const concatFile = path.join(tmpChunkDir, "concat.txt");
+    fs.writeFileSync(concatFile, concatList);
+    await execFileAsync("ffmpeg", [
+      "-y", "-f", "concat", "-safe", "0", "-i", concatFile,
+      "-ar", "44100", "-ac", "1", outputPath,
+    ], { timeout: 30000 });
+  }
+
+  // Cleanup
+  try { fs.rmSync(tmpChunkDir, { recursive: true, force: true }); } catch {}
+}
+
+/** Check if Mistral TTS is available */
+function hasMistralTTS(): boolean {
+  return !!process.env.MISTRAL_API_KEY;
+}
+
 /** Style-to-BPM mapping for beat generation */
 const STYLE_BPM: Record<string, number> = {
   afrobeat: 120,
@@ -327,14 +445,24 @@ export async function generateAudio(
   let hasVoice = false;
   try {
     console.log(`[audio] Generating TTS voice (${textForTTS.split(/\s+/).length} words)...`);
-    await execFileAsync(ZAI_CLI, [
-      "tts",
-      "--input", textForTTS,
-      "--output", ttsFile,
-      "--format", "wav",
-      "--speed", "0.85",
-    ], { timeout: 120000 });
-    hasVoice = true;
+    
+    // Use Mistral Voxtral TTS if API key is available (better quality, works on Vercel)
+    if (hasMistralTTS()) {
+      console.log("[audio] Using Mistral Voxtral TTS (high quality)");
+      await mistralTTS(textForTTS, ttsFile, "en_paul_happy");
+      hasVoice = true;
+    } else {
+      // Fallback to z-ai CLI (local only, not available on Vercel)
+      console.log("[audio] Using z-ai TTS (local CLI)");
+      await execFileAsync(ZAI_CLI, [
+        "tts",
+        "--input", textForTTS,
+        "--output", ttsFile,
+        "--format", "wav",
+        "--speed", "0.85",
+      ], { timeout: 120000 });
+      hasVoice = true;
+    }
   } catch (err) {
     console.error("[audio] TTS generation failed:", err);
   }

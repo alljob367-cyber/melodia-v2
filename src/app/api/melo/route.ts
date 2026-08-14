@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     const { action, text } = body;
 
     if (action === "tts" && text) {
-      // Générer l'audio via z-ai TTS
       // Use /tmp on Vercel (read-only filesystem), otherwise local cwd
       const IS_VERCEL = !!process.env.VERCEL;
       const outputDir = IS_VERCEL
@@ -25,6 +24,40 @@ export async function POST(req: NextRequest) {
       const filename = `melo-${Date.now()}.wav`;
       const outputPath = path.join(outputDir, filename);
 
+      // Try Mistral Voxtral TTS first (better quality, works on Vercel)
+      const mistralKey = process.env.MISTRAL_API_KEY;
+      if (mistralKey) {
+        try {
+          const response = await fetch("https://api.mistral.ai/v1/audio/speech", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${mistralKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "voxtral-mini-tts-latest",
+              input: text.slice(0, 500),
+              voice: "en_paul_happy",
+              response_format: "wav",
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.audio_data) {
+              const audioBuffer = Buffer.from(data.audio_data, "base64");
+              fs.writeFileSync(outputPath, audioBuffer);
+              const audioUrl = `/generated/melo/${filename}`;
+              return NextResponse.json({ audioUrl });
+            }
+          }
+          console.error("[melo-tts] Mistral TTS failed, falling back to z-ai");
+        } catch (mistralErr) {
+          console.error("[melo-tts] Mistral TTS error:", mistralErr);
+        }
+      }
+
+      // Fallback: z-ai CLI TTS
       try {
         await execFileAsync("z-ai", [
           "tts",

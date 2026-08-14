@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const authError = await requireAdmin();
   if (authError) return authError;
 
   try {
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")));
+    const offset = (page - 1) * limit;
+
     const [totalUsers, totalSongs, totalAIRequests, recentEvents] = await Promise.all([
       db.user.count(),
       db.song.count(),
@@ -20,9 +25,18 @@ export async function GET() {
     const completedSongs = await db.song.count({ where: { status: "completed" } });
     const generatingSongs = await db.song.count({ where: { status: "generating" } });
 
-    // AI cost calculation
-    const aiLogs = await db.aIRequestLog.findMany();
-    const totalAICost = aiLogs.reduce((sum, log) => sum + (log.cost || 0), 0);
+    // FIX #24: Paginate AI logs + use aggregate for cost instead of loading all records
+    const aiLogs = await db.aIRequestLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    });
+
+    // Use aggregate for total cost (much more efficient than loading all records)
+    const costAggregation = await db.aIRequestLog.aggregate({
+      _sum: { cost: true },
+    });
+    const totalAICost = costAggregation._sum.cost || 0;
 
     return NextResponse.json({
       analytics: {
@@ -33,6 +47,9 @@ export async function GET() {
         totalAIRequests,
         totalAICost: totalAICost.toFixed(2),
         recentEvents,
+        aiLogs,
+        page,
+        hasMore: totalAIRequests > offset + limit,
       },
     });
   } catch (error) {

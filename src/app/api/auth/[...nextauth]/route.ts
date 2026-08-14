@@ -13,13 +13,13 @@ async function ensureSeed() {
       select: { id: true },
     });
     if (!admin) {
-      console.log("[auth] No admin user found, triggering seed...");
-      // Trigger the seed endpoint internally
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      console.log("[auth] No admin user found, seeding directly...");
+      // Seed directly instead of HTTP call (works on Vercel serverless)
       try {
-        await fetch(`${baseUrl}/api/seed`);
-      } catch {
-        // If fetch fails (e.g. during build), ignore
+        const { GET: seedHandler } = await import("@/app/api/seed/route");
+        await seedHandler();
+      } catch (seedErr) {
+        console.error("[auth] Seed failed:", seedErr);
       }
     }
     seedChecked = true;
@@ -103,7 +103,7 @@ const handler = NextAuth({
   session: {
     strategy: "jwt" as const,
   },
-  secret: process.env.NEXTAUTH_SECRET || "melodia-secret-dev-key-2026",
+  secret: process.env.NEXTAUTH_SECRET, // MUST be set in production — no hardcoded fallback
 });
 
 export { handler as GET, handler as POST };

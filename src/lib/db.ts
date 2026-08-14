@@ -11,10 +11,15 @@ if (!globalForPrisma.prisma) {
   console.log(`[db] DATABASE_URL: ${isPostgres ? "✅ PostgreSQL" : "❌ NOT PostgreSQL"} - ${dbUrl.substring(0, 40)}...`);
 }
 
+// Only log queries in development — not in production (performance + security)
+const logLevel = process.env.NODE_ENV === 'development' 
+  ? ['query' as const] 
+  : ['warn' as const, 'error' as const];
+
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: ['query'],
+    log: logLevel,
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db

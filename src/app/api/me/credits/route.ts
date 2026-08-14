@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getToken } from "next-auth/jwt";
 
-// GET /api/me/credits - Get user credits
+// GET /api/me/credits - Get credits for the authenticated user
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    // FIX #15: Get userId from JWT token, not from query string
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
+    const userId = token.sub;
 
     const credits = await db.userCredits.findUnique({
       where: { userId },
@@ -26,9 +27,6 @@ export async function GET(req: NextRequest) {
       take: 10,
     });
 
-    // Debug: log raw credits object
-    console.log("[credits API] Raw credits from DB:", JSON.stringify(credits));
-    
     const responseData = {
       credits: {
         credits: credits.credits,
@@ -43,7 +41,6 @@ export async function GET(req: NextRequest) {
       },
       transactions,
     };
-    console.log("[credits API] Response:", JSON.stringify(responseData));
     
     return NextResponse.json(responseData);
   } catch (error) {

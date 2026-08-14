@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // FIX #17: Enable React Strict Mode to catch bugs
+  reactStrictMode: true,
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // Still needed for skills/ examples which have external deps
   },
-  reactStrictMode: false,
 };
 
 export default nextConfig;

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 // Routes that don't require authentication
-const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/api/health", "/api/seed"];
+const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/api/health"];
 
 // Routes that require admin role
 const adminRoutes = ["/admin", "/api/admin"];
@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
   // Get the decoded NextAuth JWT token (handles JWE decryption automatically)
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET || "melodia-secret-dev-key-2026",
+    secret: process.env.NEXTAUTH_SECRET, // MUST be set in production
   });
 
   // No valid session — redirect to login or return 401

@@ -13,7 +13,11 @@ export async function POST(req: NextRequest) {
 
     if (action === "tts" && text) {
       // Générer l'audio via z-ai TTS
-      const outputDir = path.join(process.cwd(), "public", "generated", "melo");
+      // Use /tmp on Vercel (read-only filesystem), otherwise local cwd
+      const IS_VERCEL = !!process.env.VERCEL;
+      const outputDir = IS_VERCEL
+        ? path.join("/tmp", "melodia-generated", "melo")
+        : path.join(process.cwd(), "public", "generated", "melo");
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }

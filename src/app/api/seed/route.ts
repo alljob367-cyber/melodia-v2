@@ -198,11 +198,12 @@ export async function GET() {
       },
     });
 
+    // FIX #8: Never return plaintext passwords in response
     return NextResponse.json({
       status: "seeded",
       message: "Database seeded successfully",
-      admin: "admin@melodia.ai / admin123",
-      demo: "jean@example.com / demo123",
+      admin: "admin@melodia.ai (password set)",
+      demo: "jean@example.com (password set)",
     });
   } catch (error: any) {
     console.error("[seed] Error:", error);

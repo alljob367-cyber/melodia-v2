@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { getToken } from "next-auth/jwt";
 import {
   generateLyrics,
   generateComposition,
@@ -10,7 +11,6 @@ import {
 } from "@/lib/ai-engine";
 
 const generateSchema = z.object({
-  userId: z.string(),
   style: z.string(),
   theme: z.string().optional(),
   mood: z.string().optional(),
@@ -25,6 +25,13 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
   
   try {
+    // FIX #14: Get userId from JWT token, never from request body
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+    const userId = token.sub;
+
     const body = await req.json();
     const data = generateSchema.parse(body);
 
@@ -40,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // ============ CHECK CREDITS ============
     const credits = await db.userCredits.findUnique({
-      where: { userId: data.userId },
+      where: { userId },
     });
 
     if (!credits) {
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
     // ============ CREATE SONG RECORD ============
     const song = await db.song.create({
       data: {
-        userId: data.userId,
+        userId,
         title: data.title,
         style: data.style,
         mood: data.mood,
@@ -176,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     // ============ DEBIT CREDITS ============
     await db.userCredits.update({
-      where: { userId: data.userId },
+      where: { userId },
       data: {
         credits: { decrement: totalCreditCost },
         songsRemaining: { decrement: 1 },
@@ -191,21 +198,21 @@ export async function POST(req: NextRequest) {
     await db.creditTransaction.createMany({
       data: [
         {
-          userId: data.userId,
+          userId,
           type: "debit",
           category: "song",
           amount: CREDIT_COSTS.generateLyrics + CREDIT_COSTS.generateComposition,
           description: `Paroles & Composition: ${data.title}`,
         },
         {
-          userId: data.userId,
+          userId,
           type: "debit",
           category: "cover",
           amount: CREDIT_COSTS.generateCover,
           description: `Pochette IA: ${data.title}`,
         },
         {
-          userId: data.userId,
+          userId,
           type: "debit",
           category: "song",
           amount: CREDIT_COSTS.generateAudio,
@@ -218,7 +225,7 @@ export async function POST(req: NextRequest) {
     const totalDuration = Date.now() - startTime;
     await db.aIRequestLog.create({
       data: {
-        userId: data.userId,
+        userId,
         endpoint: "/api/generate",
         model: "z-ai-sdk",
         promptTokens: lyricsTokens,
@@ -233,7 +240,7 @@ export async function POST(req: NextRequest) {
     // ============ LOG ANALYTICS ============
     await db.analyticsEvent.create({
       data: {
-        userId: data.userId,
+        userId,
         event: "song_generated",
         data: JSON.stringify({
           style: data.style,

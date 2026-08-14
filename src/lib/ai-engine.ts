@@ -18,7 +18,11 @@ import fs from "fs";
 const execFileAsync = promisify(execFile);
 
 const ZAI_CLI = "z-ai";
-const OUTPUT_DIR = "/home/z/my-project/public/generated";
+// Use /tmp on Vercel (read-only filesystem), otherwise local path
+const IS_VERCEL = !!process.env.VERCEL;
+const OUTPUT_DIR = IS_VERCEL
+  ? path.join("/tmp", "melodia-generated")
+  : path.join(process.cwd(), "public", "generated");
 
 // Ensure output directories exist
 const DIRS = ["audio", "covers", "videos", "lyrics"];
@@ -317,7 +321,7 @@ export async function generateAudio(
   const chorusText = chorusMatch ? chorusMatch[1].trim() : "";
   // Structure: verse -> chorus -> verse -> chorus -> chorus (outro)
   const audioText = `${verseText}\n\n${chorusText}\n\n${verseText}\n\n${chorusText}\n\n${chorusText}`;
-  const textForTTS = audioText.substring(0, 2000);
+  const textForTTS = audioText.substring(0, 1000); // FIX: TTS API limit is 1024 chars
 
   const ttsFile = path.join(tmpDir, "voice.wav");
   let hasVoice = false;

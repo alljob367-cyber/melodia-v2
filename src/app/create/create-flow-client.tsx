@@ -380,7 +380,10 @@ function ResultStep({
   }, [audioUrl]);
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || !audioUrl) {
+      toast.error("Audio non disponible");
+      return;
+    }
     if (isPlaying) {
       audioRef.current.pause();
     } else {
@@ -393,11 +396,11 @@ function ResultStep({
     if (audioUrl) {
       const a = document.createElement("a");
       a.href = audioUrl;
-      a.download = `${songTitle}.mp3`;
+      a.download = `${songTitle}.wav`;
       a.click();
       toast.success("Téléchargement lancé !");
     } else {
-      toast.info("Audio en préparation...");
+      toast.error("Audio non disponible pour le téléchargement");
     }
   };
 
@@ -604,7 +607,6 @@ export function CreateFlowClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
           style,
           theme,
           mood,

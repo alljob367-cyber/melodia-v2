@@ -6,7 +6,7 @@ import { getToken } from "next-auth/jwt";
 const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/api/health"];
 
 // Routes that require admin role
-const adminRoutes = ["/admin", "/api/admin"];
+const adminRoutes = ["/admin", "/api/admin", "/api/seed"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

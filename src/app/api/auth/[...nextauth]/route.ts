@@ -28,6 +28,14 @@ async function ensureSeed() {
   }
 }
 
+// Dynamic NEXTAUTH_URL: use VERCEL_URL on Vercel, otherwise env var
+function getNextauthUrl() {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return process.env.NEXTAUTH_URL || "http://localhost:3000";
+}
+
 const handler = NextAuth({
   providers: [
     CredentialsProvider({

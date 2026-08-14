@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       try {
         await execFileAsync("z-ai", [
           "tts",
-          "--text", text.slice(0, 500),
+          "--input", text.slice(0, 500),
           "--format", "wav",
           "--speed", "1.0",
           "--output", outputPath,

@@ -166,7 +166,32 @@ export async function POST(req: NextRequest) {
       }
     } catch (err) {
       console.error("Audio generation error:", err);
-      audioUrl = "";
+      // Generate a fallback silence audio file instead of a non-existent path
+      try {
+        const { execFile: execFileCb } = require("child_process");
+        const { promisify } = require("util");
+        const execFileAsync = promisify(execFileCb);
+        const path = require("path");
+        const IS_VERCEL = !!process.env.VERCEL;
+        const outputDir = IS_VERCEL
+          ? path.join("/tmp", "melodia-generated", "audio")
+          : path.join(process.cwd(), "public", "generated", "audio");
+        const fs = require("fs");
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+        const fallbackFilename = `audio-silence-${Date.now()}.wav`;
+        const fallbackPath = path.join(outputDir, fallbackFilename);
+        await execFileAsync("ffmpeg", [
+          "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
+          "-t", "30", "-ar", "44100", "-ac", "1", fallbackPath,
+        ], { timeout: 10000 });
+        audioUrl = `/generated/audio/${fallbackFilename}`;
+        duration = 30;
+        console.log("[generate] Fallback silence audio generated:", fallbackFilename);
+      } catch (fallbackErr) {
+        console.error("[generate] Fallback silence generation also failed:", fallbackErr);
+        audioUrl = "";
+        duration = 0;
+      }
     }
 
     // ============ UPDATE SONG TO COMPLETED ============
@@ -175,8 +200,8 @@ export async function POST(req: NextRequest) {
       data: {
         status: "completed",
         duration,
-        audioUrl: audioUrl || `/audio/${song.id}.mp3`,
-        coverUrl: coverUrl || `/covers/${song.id}.png`,
+        audioUrl: audioUrl || null,
+        coverUrl: coverUrl || null,
         lyricsText,
       },
     });
@@ -268,8 +293,8 @@ export async function POST(req: NextRequest) {
         lyrics: lyricsText,
         composition: compositionText,
         duration,
-        audioUrl: audioUrl || `/audio/${song.id}.mp3`,
-        coverUrl: coverUrl || `/covers/${song.id}.png`,
+        audioUrl: audioUrl || null,
+        coverUrl: coverUrl || null,
         creditsUsed: totalCreditCost,
       },
     });

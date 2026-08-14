@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -58,6 +58,9 @@ export default function SongResultPage() {
   const [song, setSong] = useState<SongData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const userName = session?.user?.name || "Créateur";
   const userPlan = (session?.user as any)?.plan || "basic";
@@ -90,14 +93,32 @@ export default function SongResultPage() {
   const lyricsContent = song?.lyrics?.[0]?.content || "Aucunes paroles disponibles";
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-    if (!isPlaying) {
-      toast.success("Lecture en cours...");
+    if (!audioRef.current || !song?.audioUrl) {
+      toast.error("Audio non disponible");
+      return;
+    }
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {
+        toast.error("Audio non disponible");
+        setIsPlaying(false);
+      });
+      setIsPlaying(true);
     }
   };
 
   const handleDownload = () => {
-    toast.info("Téléchargement en préparation...");
+    if (!song?.audioUrl) {
+      toast.error("Audio non disponible pour le téléchargement");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = song.audioUrl;
+    a.download = `${song.title || "melodia-song"}.wav`;
+    a.click();
+    toast.success("Téléchargement lancé !");
   };
 
   const handleShare = () => {
@@ -141,9 +162,22 @@ export default function SongResultPage() {
   const styleName = song.style || "Inconnu";
   const moodName = song.mood || "";
   const durationStr = formatDuration(song.duration);
+  const hasAudio = !!song.audioUrl && !song.audioUrl.startsWith("/audio/");
+  const progressPercent = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">
+      {/* Hidden audio element for playback */}
+      {hasAudio && (
+        <audio
+          ref={audioRef}
+          src={song.audioUrl}
+          onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
+          onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
+          onEnded={() => setIsPlaying(false)}
+          preload="metadata"
+        />
+      )}
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} userPlan={userPlan} songsRemaining={2} songsTotal={2} />
       <main className={`transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
         <Header title={song.title} userName={userName} userPlan={userPlan} />
@@ -166,10 +200,10 @@ export default function SongResultPage() {
                 <Card className="glass p-6">
                   <div className="mb-6">
                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full w-1/3 rounded-full btn-gradient" />
+                      <div className="h-full rounded-full btn-gradient transition-all duration-300" style={{ width: `${progressPercent}%` }} />
                     </div>
                     <div className="flex justify-between mt-2 text-xs text-slate-500">
-                      <span>0:00</span><span>{durationStr}</span>
+                      <span>{formatDuration(Math.round(currentTime))}</span><span>{durationStr}</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-4 mb-6">
@@ -228,7 +262,7 @@ export default function SongResultPage() {
                     { label: "Qualité", value: "320 kbps" },
                     { label: "Thème", value: song.theme || "—" },
                     { label: "Statut", value: song.status === "completed" ? "Terminé" : song.status === "generating" ? "En cours" : song.status },
-                    { label: "Audio", value: song.audioUrl ? "Disponible" : "Non disponible" },
+                    { label: "Audio", value: hasAudio ? "Disponible" : "Non disponible" },
                     { label: "Créé le", value: formatDate(song.createdAt) },
                   ].map((d, i) => (
                     <div key={i}><p className="text-xs text-slate-500">{d.label}</p><p className="text-sm text-white font-medium">{d.value}</p></div>

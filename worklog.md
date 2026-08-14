@@ -42,3 +42,29 @@ Stage Summary:
 - Build passes successfully
 - New Vercel deployment verified working (login, dashboard, API all OK)
 - melodia.vercel.app still points to old project (needs Vercel token to fix)
+
+---
+Task ID: fix-audio-vercel-blob
+Agent: main
+Task: Fix audio not available on Vercel by integrating Vercel Blob storage
+
+Work Log:
+- Installed @vercel/blob package
+- Added uploadToBlob() helper in ai-engine.ts that uploads files to Vercel Blob only on Vercel (IS_VERCEL)
+- Modified generateCoverArt() to upload cover PNG to Vercel Blob → returns blob URL as coverUrl
+- Modified generateAudio() to upload audio WAV to Vercel Blob → returns blob URL as audioUrl
+- Modified /api/melo route to upload Melo TTS WAV to Vercel Blob
+- Modified /api/generate route fallback silence audio to also upload to Vercel Blob
+- Added import { put } from "@vercel/blob" in all relevant files
+- Added BLOB_READ_WRITE_TOKEN placeholder in .env with instructions
+- Added Vercel Blob image domains in next.config.ts images.remotePatterns
+- Updated song/[id]/page.tsx to show real cover image with Next.js Image component
+- Updated creations/page.tsx to show real cover images
+- Build verified: compiles successfully
+- Found 1 existing song with broken /generated/ URL (will be fixed on next generation)
+
+Stage Summary:
+- Root cause: On Vercel serverless, audio/cover files written to /tmp/ are ephemeral and NOT web-accessible
+- Fix: All generated media files now upload to Vercel Blob in production, returning persistent CDN-backed URLs
+- Local dev unchanged: files stay in public/generated/ as before
+- User action needed: Create Vercel Blob store and set BLOB_READ_WRITE_TOKEN env var in Vercel Dashboard

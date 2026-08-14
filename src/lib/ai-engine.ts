@@ -14,6 +14,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import { put } from "@vercel/blob";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +24,34 @@ const IS_VERCEL = !!process.env.VERCEL;
 const OUTPUT_DIR = IS_VERCEL
   ? path.join("/tmp", "melodia-generated")
   : path.join(process.cwd(), "public", "generated");
+
+// ============ VERCEL BLOB UPLOAD HELPER ============
+
+/**
+ * Upload a file to Vercel Blob storage.
+ * On Vercel, local /tmp files are ephemeral and not web-accessible.
+ * Vercel Blob provides persistent, CDN-backed URLs that work everywhere.
+ */
+async function uploadToBlob(
+  filePath: string,
+  blobPathname: string,
+  contentType: string = "application/octet-stream"
+): Promise<string> {
+  if (!IS_VERCEL) {
+    // Local dev: files are already in public/, return relative URL
+    return "";
+  }
+
+  const fileBuffer = fs.readFileSync(filePath);
+  const blob = await put(blobPathname, fileBuffer, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false, // Use deterministic path for predictable URLs
+  });
+
+  console.log(`[blob] Uploaded ${blobPathname} → ${blob.url}`);
+  return blob.url;
+}
 
 // Ensure output directories exist
 const DIRS = ["audio", "covers", "videos", "lyrics"];
@@ -205,9 +234,20 @@ export async function generateCoverArt(
     "--size", "1024x1024",
   ], { timeout: 120000 });
 
+  // Upload to Vercel Blob in production (files in /tmp are not web-accessible)
+  let coverUrl = `/generated/covers/${filename}`;
+  if (IS_VERCEL) {
+    try {
+      const blobUrl = await uploadToBlob(outputPath, `melodia/covers/${filename}`, "image/png");
+      if (blobUrl) coverUrl = blobUrl;
+    } catch (blobErr) {
+      console.error("[cover] Blob upload failed, using local path:", blobErr);
+    }
+  }
+
   return {
     coverPath: outputPath,
-    coverUrl: `/generated/covers/${filename}`,
+    coverUrl,
     cost: 0.04, // ~$0.04 per image generation
   };
 }
@@ -540,9 +580,20 @@ export async function generateAudio(
 
   console.log(`[audio] ✅ Final audio: ${finalFilename} (${duration}s)`);
 
+  // Upload to Vercel Blob in production (files in /tmp are not web-accessible)
+  let audioUrl = `/generated/audio/${finalFilename}`;
+  if (IS_VERCEL) {
+    try {
+      const blobUrl = await uploadToBlob(finalPath, `melodia/audio/${finalFilename}`, "audio/wav");
+      if (blobUrl) audioUrl = blobUrl;
+    } catch (blobErr) {
+      console.error("[audio] Blob upload failed, using local path:", blobErr);
+    }
+  }
+
   return {
     audioPath: finalPath,
-    audioUrl: `/generated/audio/${finalFilename}`,
+    audioUrl,
     duration,
     cost: 0.03,
   };

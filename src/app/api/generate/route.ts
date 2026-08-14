@@ -9,6 +9,31 @@ import {
   generateAudio,
   CREDIT_COSTS,
 } from "@/lib/ai-engine";
+import { put } from "@vercel/blob";
+import fs from "fs";
+import path from "path";
+
+const IS_VERCEL = !!process.env.VERCEL;
+
+/**
+ * Upload a file to Vercel Blob (only in production/Vercel).
+ * Returns the blob URL, or empty string if not on Vercel.
+ */
+async function uploadToBlob(
+  filePath: string,
+  blobPathname: string,
+  contentType: string = "application/octet-stream"
+): Promise<string> {
+  if (!IS_VERCEL) return "";
+  const fileBuffer = fs.readFileSync(filePath);
+  const blob = await put(blobPathname, fileBuffer, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+  });
+  console.log(`[blob] Uploaded ${blobPathname} → ${blob.url}`);
+  return blob.url;
+}
 
 const generateSchema = z.object({
   style: z.string(),
@@ -171,20 +196,28 @@ export async function POST(req: NextRequest) {
         const { execFile: execFileCb } = require("child_process");
         const { promisify } = require("util");
         const execFileAsync = promisify(execFileCb);
-        const path = require("path");
-        const IS_VERCEL = !!process.env.VERCEL;
-        const outputDir = IS_VERCEL
+        const fallbackOutputDir = IS_VERCEL
           ? path.join("/tmp", "melodia-generated", "audio")
           : path.join(process.cwd(), "public", "generated", "audio");
-        const fs = require("fs");
-        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+        if (!fs.existsSync(fallbackOutputDir)) fs.mkdirSync(fallbackOutputDir, { recursive: true });
         const fallbackFilename = `audio-silence-${Date.now()}.wav`;
-        const fallbackPath = path.join(outputDir, fallbackFilename);
+        const fallbackPath = path.join(fallbackOutputDir, fallbackFilename);
         await execFileAsync("ffmpeg", [
           "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
           "-t", "30", "-ar", "44100", "-ac", "1", fallbackPath,
         ], { timeout: 10000 });
+        
+        // Upload fallback audio to Vercel Blob
         audioUrl = `/generated/audio/${fallbackFilename}`;
+        if (IS_VERCEL) {
+          try {
+            const blobUrl = await uploadToBlob(fallbackPath, `melodia/audio/${fallbackFilename}`, "audio/wav");
+            if (blobUrl) audioUrl = blobUrl;
+          } catch (blobErr) {
+            console.error("[generate] Fallback blob upload failed:", blobErr);
+          }
+        }
+        
         duration = 30;
         console.log("[generate] Fallback silence audio generated:", fallbackFilename);
       } catch (fallbackErr) {

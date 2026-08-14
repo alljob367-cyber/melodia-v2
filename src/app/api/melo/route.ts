@@ -3,8 +3,31 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import { put } from "@vercel/blob";
 
 const execFileAsync = promisify(execFile);
+
+const IS_VERCEL = !!process.env.VERCEL;
+
+/**
+ * Upload a file to Vercel Blob (only in production/Vercel).
+ * Returns the blob URL, or empty string if not on Vercel.
+ */
+async function uploadToBlob(
+  filePath: string,
+  blobPathname: string,
+  contentType: string = "application/octet-stream"
+): Promise<string> {
+  if (!IS_VERCEL) return "";
+  const fileBuffer = fs.readFileSync(filePath);
+  const blob = await put(blobPathname, fileBuffer, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+  });
+  console.log(`[blob] Uploaded ${blobPathname} → ${blob.url}`);
+  return blob.url;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,7 +70,18 @@ export async function POST(req: NextRequest) {
             if (data.audio_data) {
               const audioBuffer = Buffer.from(data.audio_data, "base64");
               fs.writeFileSync(outputPath, audioBuffer);
-              const audioUrl = `/generated/melo/${filename}`;
+              
+              // Upload to Vercel Blob in production
+              let audioUrl = `/generated/melo/${filename}`;
+              if (IS_VERCEL) {
+                try {
+                  const blobUrl = await uploadToBlob(outputPath, `melodia/melo/${filename}`, "audio/wav");
+                  if (blobUrl) audioUrl = blobUrl;
+                } catch (blobErr) {
+                  console.error("[melo-tts] Blob upload failed:", blobErr);
+                }
+              }
+              
               return NextResponse.json({ audioUrl });
             }
           }
@@ -67,7 +101,17 @@ export async function POST(req: NextRequest) {
           "--output", outputPath,
         ], { timeout: 30000 });
 
-        const audioUrl = `/generated/melo/${filename}`;
+        // Upload to Vercel Blob in production
+        let audioUrl = `/generated/melo/${filename}`;
+        if (IS_VERCEL) {
+          try {
+            const blobUrl = await uploadToBlob(outputPath, `melodia/melo/${filename}`, "audio/wav");
+            if (blobUrl) audioUrl = blobUrl;
+          } catch (blobErr) {
+            console.error("[melo-tts] Blob upload failed:", blobErr);
+          }
+        }
+
         return NextResponse.json({ audioUrl });
       } catch {
         return NextResponse.json({ audioUrl: null, fallback: true });

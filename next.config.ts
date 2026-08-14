@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true, // Still needed for skills/ examples which have external deps
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.blob.storage.vercel-storage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "public.blob.vercel-storage.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

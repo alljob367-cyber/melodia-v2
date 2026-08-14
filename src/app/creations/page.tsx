@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -200,8 +201,18 @@ export default function CreationsPage() {
                     <Card className="glass overflow-hidden group hover:border-purple-500/20 transition-all">
                       {/* Cover area */}
                       <div className="relative aspect-square bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-amber-500/10">
+                        {song.coverUrl ? (
+                          <Image
+                            src={song.coverUrl}
+                            alt={song.title}
+                            fill
+                            className="object-cover"
+                            unoptimized={song.coverUrl.startsWith("https")}
+                          />
+                        ) : (
+                          <Music className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-white/20" />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                        <Music className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-white/20" />
 
                         {/* Play button on hover */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>

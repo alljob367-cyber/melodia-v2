@@ -14,6 +14,7 @@ import {
   Loader2, ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -186,8 +187,18 @@ export default function SongResultPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Cover art */}
               <div className="aspect-square rounded-2xl bg-gradient-to-br from-purple-600/40 via-pink-500/30 to-amber-500/30 relative overflow-hidden">
+                {song.coverUrl ? (
+                  <Image
+                    src={song.coverUrl}
+                    alt={song.title}
+                    fill
+                    className="object-cover"
+                    unoptimized={song.coverUrl.startsWith("https")}
+                  />
+                ) : (
+                  <Music className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 text-white/30" />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <Music className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 text-white/30" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <Badge className="bg-purple-500/20 text-purple-300 text-xs mb-2">{styleName}</Badge>
                   <h1 className="text-3xl font-bold text-white">{song.title}</h1>

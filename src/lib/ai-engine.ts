@@ -15,6 +15,7 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs";
 import { put } from "@vercel/blob";
+import ffmpegStatic from "ffmpeg-static";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,6 +25,58 @@ const IS_VERCEL = !!process.env.VERCEL;
 const OUTPUT_DIR = IS_VERCEL
   ? path.join("/tmp", "melodia-generated")
   : path.join(process.cwd(), "public", "generated");
+
+// ============ FFMPEG PATH RESOLUTION ============
+// On Vercel serverless, ffmpeg is not in PATH. Use ffmpeg-static binary instead.
+function getFfmpegPath(): string {
+  if (ffmpegStatic && typeof ffmpegStatic === "string") {
+    return ffmpegStatic;
+  }
+  return "ffmpeg"; // Fallback to system PATH
+}
+
+function getFfprobePath(): string {
+  // ffprobe-static is less reliable; on Vercel we can derive from ffmpeg
+  // or use a simplified approach
+  if (IS_VERCEL) {
+    // On Vercel, ffprobe may not be available. We'll use ffmpeg for probing too.
+    return getFfmpegPath();
+  }
+  return "ffprobe";
+}
+
+/** Execute ffmpeg with the correct binary path */
+async function execFfmpeg(args: string[], options?: { timeout?: number }): Promise<{ stdout: string; stderr: string }> {
+  return execFileAsync(getFfmpegPath(), args, options);
+}
+
+/** Get audio duration using ffprobe or ffmpeg fallback */
+async function getAudioDuration(filePath: string): Promise<number> {
+  try {
+    if (!IS_VERCEL) {
+      // Local: use ffprobe
+      const { stdout } = await execFileAsync("ffprobe", [
+        "-v", "error", "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1", filePath,
+      ], { timeout: 5000 });
+      return Math.round(parseFloat(stdout.trim())) || 90;
+    }
+    // Vercel: use ffmpeg to get duration (ffprobe not available)
+    const { stderr } = await execFfmpeg([
+      "-i", filePath, "-f", "null", "-"
+    ], { timeout: 10000 });
+    const match = stderr.match(/Duration:\s*(\d+):(\d+):(\d+\.?\d*)/);
+    if (match) {
+      const hours = parseInt(match[1]);
+      const mins = parseInt(match[2]);
+      const secs = parseFloat(match[3]);
+      return Math.round(hours * 3600 + mins * 60 + secs) || 90;
+    }
+    return 90;
+  } catch {
+    return 90;
+  }
+}
 
 // ============ VERCEL BLOB UPLOAD HELPER ============
 
@@ -357,7 +410,7 @@ async function mistralTTS(
     const concatList = chunkFiles.map(f => `file '${f}'`).join("\n");
     const concatFile = path.join(tmpChunkDir, "concat.txt");
     fs.writeFileSync(concatFile, concatList);
-    await execFileAsync("ffmpeg", [
+    await execFfmpeg([
       "-y", "-f", "concat", "-safe", "0", "-i", concatFile,
       "-ar", "44100", "-ac", "1", outputPath,
     ], { timeout: 30000 });
@@ -407,7 +460,7 @@ async function generateBeatBar(bpm: number, style: string): Promise<string> {
   const bassFreq = isAfrican ? 100 : 110;
   const shakerVol = isAfrican ? 0.15 : 0.08;
 
-  await execFileAsync("ffmpeg", [
+  await execFfmpeg([
     "-y",
     "-f", "lavfi", "-i", `sine=frequency=${kickFreq}:duration=0.12`,
     "-f", "lavfi", "-i", "anoisesrc=d=0.08:c=pink:r=44100",
@@ -513,18 +566,11 @@ export async function generateAudio(
       // Mix beat + voice: loop beat to match voice duration
       console.log("[audio] Mixing beat + voice...");
       // First get voice duration
-      let voiceDuration = 90;
-      try {
-        const { stdout: probeOut } = await execFileAsync("ffprobe", [
-          "-v", "error", "-show_entries", "format=duration",
-          "-of", "default=noprint_wrappers=1:nokey=1", ttsFile,
-        ], { timeout: 5000 });
-        voiceDuration = Math.round(parseFloat(probeOut.trim())) || 90;
-      } catch {}
+      const voiceDuration = await getAudioDuration(ttsFile);
       // Add 3 seconds padding
       const totalDuration = voiceDuration + 3;
       
-      await execFileAsync("ffmpeg", [
+      await execFfmpeg([
         "-y",
         "-stream_loop", "-1",  // Loop the beat infinitely
         "-i", beatFile,
@@ -539,7 +585,7 @@ export async function generateAudio(
     } else {
       // No voice, just loop the beat for 90 seconds
       console.log("[audio] No voice, looping beat...");
-      await execFileAsync("ffmpeg", [
+      await execFfmpeg([
         "-y",
         "-stream_loop", "-1",
         "-i", beatFile,
@@ -553,21 +599,14 @@ export async function generateAudio(
     fs.copyFileSync(ttsFile, finalPath);
   } else {
     // Fallback: generate silence
-    await execFileAsync("ffmpeg", [
+    await execFfmpeg([
       "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
       "-t", "60", "-ar", "44100", "-ac", "1", finalPath,
     ], { timeout: 10000 });
   }
 
-  // Get actual duration with ffprobe
-  let duration = 90;
-  try {
-    const { stdout: probeOut } = await execFileAsync("ffprobe", [
-      "-v", "error", "-show_entries", "format=duration",
-      "-of", "default=noprint_wrappers=1:nokey=1", finalPath,
-    ], { timeout: 5000 });
-    duration = Math.round(parseFloat(probeOut.trim())) || 90;
-  } catch {}
+  // Get actual duration
+  const duration = await getAudioDuration(finalPath);
 
   // Cleanup temp dir
   try {

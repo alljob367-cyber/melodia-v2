@@ -12,8 +12,15 @@ import {
 import { put } from "@vercel/blob";
 import fs from "fs";
 import path from "path";
+import ffmpegStatic from "ffmpeg-static";
 
 const IS_VERCEL = !!process.env.VERCEL;
+
+// Resolve ffmpeg path (use ffmpeg-static on Vercel)
+function getFfmpegPath(): string {
+  if (ffmpegStatic && typeof ffmpegStatic === "string") return ffmpegStatic;
+  return "ffmpeg";
+}
 
 /**
  * Upload a file to Vercel Blob (only in production/Vercel).
@@ -202,7 +209,7 @@ export async function POST(req: NextRequest) {
         if (!fs.existsSync(fallbackOutputDir)) fs.mkdirSync(fallbackOutputDir, { recursive: true });
         const fallbackFilename = `audio-silence-${Date.now()}.wav`;
         const fallbackPath = path.join(fallbackOutputDir, fallbackFilename);
-        await execFileAsync("ffmpeg", [
+        await execFileAsync(getFfmpegPath(), [
           "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
           "-t", "30", "-ar", "44100", "-ac", "1", fallbackPath,
         ], { timeout: 10000 });

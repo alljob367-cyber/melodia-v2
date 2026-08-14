@@ -68,3 +68,26 @@ Stage Summary:
 - Fix: All generated media files now upload to Vercel Blob in production, returning persistent CDN-backed URLs
 - Local dev unchanged: files stay in public/generated/ as before
 - User action needed: Create Vercel Blob store and set BLOB_READ_WRITE_TOKEN env var in Vercel Dashboard
+
+---
+Task ID: fix-ffmpeg-vercel
+Agent: main
+Task: Fix ffmpeg not available on Vercel serverless + comprehensive audio pipeline fix
+
+Work Log:
+- Discovered that ffmpeg is NOT available in Vercel serverless environment
+- Installed ffmpeg-static package (pre-compiled binary bundled in node_modules)
+- Added getFfmpegPath() helper that resolves to ffmpeg-static binary on Vercel, system ffmpeg locally
+- Added getAudioDuration() helper that uses ffprobe locally, ffmpeg -i probing on Vercel
+- Replaced all execFileAsync("ffmpeg",...) calls with execFfmpeg(...) in ai-engine.ts
+- Replaced all ffprobe calls with getAudioDuration() in ai-engine.ts
+- Added ffmpeg-static import and getFfmpegPath() in generate/route.ts fallback
+- Updated vercel.json: maxDuration 120s for generate, 30s for melo
+- Created vercel-build.sh (for future system deps if needed)
+- Build verified: compiles successfully
+
+Stage Summary:
+- Root cause #2: ffmpeg binary not available on Vercel serverless
+- Fix: ffmpeg-static provides pre-compiled binary that works in serverless
+- Combined with Vercel Blob fix, audio should now work end-to-end on Vercel
+- User needs: 1) Create Vercel Blob store, 2) Redeploy

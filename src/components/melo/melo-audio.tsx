@@ -3,24 +3,66 @@
 import { useState, useRef, useCallback } from "react";
 import { MeloSVG } from "./melo-svg";
 
-// ===== MELO AUDIO — Synthèse vocale via Web Speech API + z-ai TTS =====
+// ===== MELO AUDIO — Multi-provider TTS via Web Speech API + API =====
+// Primary: Web Speech API (free, instant, always available)
+// Fallback: /api/melo TTS (OpenAI → ElevenLabs → Mistral → z-ai)
 
 interface MeloAudioProps {
   text: string;
   onSpeakStart?: () => void;
   onSpeakEnd?: () => void;
+  preferHighQuality?: boolean; // If true, try API TTS first
 }
 
-export function MeloAudio({ text, onSpeakStart, onSpeakEnd }: MeloAudioProps) {
+export function MeloAudio({ text, onSpeakStart, onSpeakEnd, preferHighQuality = false }: MeloAudioProps) {
   const [speaking, setSpeaking] = useState(false);
   const [audioMode, setAudioMode] = useState<"speech" | "tts">("speech");
+  const [provider, setProvider] = useState<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const speak = useCallback(async () => {
     if (speaking) return;
 
-    // Mode 1: Web Speech API (gratuit, fonctionne toujours)
-    if (audioMode === "speech" && "speechSynthesis" in window) {
+    // If user prefers high quality or mode is tts, try API first
+    if ((preferHighQuality || audioMode === "tts")) {
+      try {
+        setSpeaking(true);
+        onSpeakStart?.();
+
+        const res = await fetch("/api/melo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "tts", text }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.audioUrl) {
+            setProvider(data.provider || "api");
+            const audio = new Audio(data.audioUrl);
+            audioRef.current = audio;
+            audio.onended = () => {
+              setSpeaking(false);
+              onSpeakEnd?.();
+            };
+            audio.onerror = () => {
+              setSpeaking(false);
+              onSpeakEnd?.();
+            };
+            await audio.play();
+            return;
+          }
+        }
+
+        // API failed, fallback to Speech API
+        setSpeaking(false);
+      } catch {
+        setSpeaking(false);
+      }
+    }
+
+    // Mode: Web Speech API (gratuit, fonctionne toujours)
+    if ("speechSynthesis" in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "fr-FR";
       utterance.rate = 1.0;
@@ -34,6 +76,7 @@ export function MeloAudio({ text, onSpeakStart, onSpeakEnd }: MeloAudioProps) {
 
       utterance.onstart = () => {
         setSpeaking(true);
+        setProvider("browser");
         onSpeakStart?.();
       };
       utterance.onend = () => {
@@ -50,43 +93,9 @@ export function MeloAudio({ text, onSpeakStart, onSpeakEnd }: MeloAudioProps) {
       return;
     }
 
-    // Mode 2: z-ai TTS API (haute qualité)
-    try {
-      setSpeaking(true);
-      onSpeakStart?.();
-
-      const res = await fetch("/api/melo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "tts", text }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.audioUrl) {
-          const audio = new Audio(data.audioUrl);
-          audioRef.current = audio;
-          audio.onended = () => {
-            setSpeaking(false);
-            onSpeakEnd?.();
-          };
-          audio.onerror = () => {
-            setSpeaking(false);
-            onSpeakEnd?.();
-          };
-          await audio.play();
-          return;
-        }
-      }
-
-      // Fallback vers Speech API
-      setSpeaking(false);
-      setAudioMode("speech");
-    } catch {
-      setSpeaking(false);
-      setAudioMode("speech");
-    }
-  }, [speaking, audioMode, text, onSpeakStart, onSpeakEnd]);
+    // No speech available at all
+    console.warn("[melo-audio] No TTS available");
+  }, [speaking, audioMode, text, preferHighQuality, onSpeakStart, onSpeakEnd]);
 
   const stop = useCallback(() => {
     if ("speechSynthesis" in window) speechSynthesis.cancel();
@@ -97,6 +106,14 @@ export function MeloAudio({ text, onSpeakStart, onSpeakEnd }: MeloAudioProps) {
     setSpeaking(false);
     onSpeakEnd?.();
   }, [onSpeakEnd]);
+
+  // Provider label for UI
+  const providerLabel = provider === "openai" ? "OpenAI" 
+    : provider === "elevenlabs" ? "ElevenLabs"
+    : provider === "mistral" ? "Mistral"
+    : provider === "z-ai" ? "z-ai"
+    : provider === "browser" ? "Browser"
+    : "";
 
   return (
     <div className="flex items-center gap-2">
@@ -122,19 +139,36 @@ export function MeloAudio({ text, onSpeakStart, onSpeakEnd }: MeloAudioProps) {
         )}
       </button>
       {speaking && (
-        <div className="flex items-center gap-0.5">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="w-1 bg-purple-400 rounded-full animate-pulse"
-              style={{
-                height: `${8 + Math.random() * 8}px`,
-                animationDelay: `${i * 0.15}s`,
-              }}
-            />
-          ))}
+        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="w-1 bg-purple-400 rounded-full animate-pulse"
+                style={{
+                  height: `${8 + Math.random() * 8}px`,
+                  animationDelay: `${i * 0.15}s`,
+                }}
+              />
+            ))}
+          </div>
+          {providerLabel && (
+            <span className="text-[9px] text-slate-500 ml-1">{providerLabel}</span>
+          )}
         </div>
       )}
+      {/* Toggle high quality mode */}
+      <button
+        onClick={() => setAudioMode(audioMode === "speech" ? "tts" : "speech")}
+        className={`w-5 h-5 rounded flex items-center justify-center transition-all text-[8px] ${
+          audioMode === "tts"
+            ? "bg-green-500/20 text-green-400"
+            : "bg-white/5 text-slate-600 hover:text-slate-400"
+        }`}
+        title={audioMode === "tts" ? "Mode haute qualité (API)" : "Mode navigateur (gratuit)"}
+      >
+        HQ
+      </button>
     </div>
   );
 }

@@ -139,27 +139,35 @@ export const LLM_MODELS: Record<string, ModelConfig> = {
 // ============================================================
 
 export const VIDEO_MODELS: Record<string, VideoModelConfig> = {
-  // Désactivés pour le test gratuit — décommentez quand prêt
-  // "veo-3.1-lite": {
-  //   id: "google/veo-3.1-lite", name: "Veo 3.1 Lite",
-  //   pricePerSecond: 0.05, maxDuration: 8,
-  //   resolutions: ["720p", "1080p"], hasAudio: true,
-  // },
-  // "kling-v3-standard": {
-  //   id: "kwaivgi/kling-v3-standard", name: "Kling v3.0 Standard",
-  //   pricePerSecond: 0.126, maxDuration: 15,
-  //   resolutions: ["720p", "1080p"], hasAudio: true,
-  // },
-  // "kling-v3-pro": {
-  //   id: "kwaivgi/kling-v3-pro", name: "Kling v3.0 Pro",
-  //   pricePerSecond: 0.168, maxDuration: 15,
-  //   resolutions: ["1080p", "4K"], hasAudio: true,
-  // },
-  // "grok-imagine-video": {
-  //   id: "xai/grok-imagine-video", name: "Grok Imagine Video",
-  //   pricePerSecond: 0.05, maxDuration: 15,
-  //   resolutions: ["480p", "720p"], hasAudio: false,
-  // },
+  // === Modèles vidéo activés — multi-provider via ai-providers.ts ===
+  // Replicate (Stable Video Diffusion) — abordable, bonne qualité
+  "replicate-svd": {
+    id: "replicate/stable-video-diffusion", name: "Stable Video Diffusion",
+    pricePerSecond: 0.033, maxDuration: 5,
+    resolutions: ["1024x576"], hasAudio: false,
+  },
+  // Luma AI (Dream Machine) — haute qualité, fluide
+  "luma-dream": {
+    id: "luma/dream-machine", name: "Luma Dream Machine",
+    pricePerSecond: 0.05, maxDuration: 5,
+    resolutions: ["720p", "1080p"], hasAudio: false,
+  },
+  // === Modèles OpenRouter (payants, pour plus tard) ===
+  "veo-3.1-lite": {
+    id: "google/veo-3.1-lite", name: "Veo 3.1 Lite",
+    pricePerSecond: 0.05, maxDuration: 8,
+    resolutions: ["720p", "1080p"], hasAudio: true,
+  },
+  "kling-v3-standard": {
+    id: "kwaivgi/kling-v3-standard", name: "Kling v3.0 Standard",
+    pricePerSecond: 0.126, maxDuration: 15,
+    resolutions: ["720p", "1080p"], hasAudio: true,
+  },
+  "kling-v3-pro": {
+    id: "kwaivgi/kling-v3-pro", name: "Kling v3.0 Pro",
+    pricePerSecond: 0.168, maxDuration: 15,
+    resolutions: ["1080p", "4K"], hasAudio: true,
+  },
 };
 
 // ============================================================
@@ -190,51 +198,61 @@ export const PLAN_MODELS: Record<MelodiaPlan, PlanModelConfig> = {
     canUseLabelFeatures: false,
   },
 
-  // 🔵 ARTIST STARTER — 5 000 FCFA (gratuit pour test)
+  // 🔵 ARTIST STARTER — 5 000 FCFA
   artist_starter: {
     primaryLLM: LLM_MODELS["nemotron-3-super"],
     fallbackLLM: LLM_MODELS["nemotron-3.5-lightning"],
-    canUseVideo: false, // Vidéo désactivée en mode gratuit
+    videoEconomy: VIDEO_MODELS["replicate-svd"],
+    canUseVideo: true,  // ✅ FIXED: Economy video (Replicate) now available
     canUseAIProducer: true,
     canUseLabelFeatures: false,
   },
 
-  // 🟣 ARTIST PRODUCTION — 10 000 FCFA (gratuit pour test)
+  // 🟣 ARTIST PRODUCTION — 10 000 FCFA
   artist_production: {
     primaryLLM: LLM_MODELS["nemotron-3-ultra"],
     fallbackLLM: LLM_MODELS["nemotron-3-super"],
     multimodalLLM: LLM_MODELS["nemotron-3-nano-omni"],
-    canUseVideo: false,
+    videoEconomy: VIDEO_MODELS["replicate-svd"],
+    canUseVideo: true,  // ✅ FIXED: Economy video now available
     canUseAIProducer: true,
     canUseLabelFeatures: false,
   },
 
-  // 🎬 VIDEO CREATOR — 15 000 FCFA (gratuit pour test)
+  // 🎬 VIDEO CREATOR — 15 000 FCFA
   video_creator: {
     primaryLLM: LLM_MODELS["nemotron-3-ultra"],
     fallbackLLM: LLM_MODELS["nemotron-3-super"],
     multimodalLLM: LLM_MODELS["nemotron-3-nano-omni"],
-    canUseVideo: false,
+    videoStandard: VIDEO_MODELS["luma-dream"],
+    videoEconomy: VIDEO_MODELS["replicate-svd"],
+    canUseVideo: true,  // ✅ FIXED: Video Creator plan now has video enabled
     canUseAIProducer: true,
     canUseLabelFeatures: false,
   },
 
-  // ⭐ ARTIST PRO — 25 000 FCFA (gratuit pour test)
+  // ⭐ ARTIST PRO — 25 000 FCFA
   artist_pro: {
     primaryLLM: LLM_MODELS["nemotron-3-ultra"],
     fallbackLLM: LLM_MODELS["nemotron-3-super"],
     multimodalLLM: LLM_MODELS["nemotron-3-nano-omni"],
-    canUseVideo: false,
+    videoStandard: VIDEO_MODELS["luma-dream"],
+    videoPremium: VIDEO_MODELS["kling-v3-standard"],
+    videoEconomy: VIDEO_MODELS["replicate-svd"],
+    canUseVideo: true,  // ✅ FIXED: Artist Pro now has video enabled
     canUseAIProducer: true,
     canUseLabelFeatures: false,
   },
 
-  // 🏢 LABEL — 50 000 FCFA (gratuit pour test)
+  // 🏢 LABEL — 50 000 FCFA
   label: {
     primaryLLM: LLM_MODELS["nemotron-3-ultra"],
     fallbackLLM: LLM_MODELS["nemotron-3-super"],
     multimodalLLM: LLM_MODELS["nemotron-3-nano-omni"],
-    canUseVideo: false,
+    videoStandard: VIDEO_MODELS["kling-v3-standard"],
+    videoPremium: VIDEO_MODELS["kling-v3-pro"],
+    videoEconomy: VIDEO_MODELS["luma-dream"],
+    canUseVideo: true,  // ✅ FIXED: Label now has video enabled with premium
     canUseAIProducer: true,
     canUseLabelFeatures: true,
   },

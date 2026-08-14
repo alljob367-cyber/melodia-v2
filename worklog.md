@@ -91,3 +91,35 @@ Stage Summary:
 - Fix: ffmpeg-static provides pre-compiled binary that works in serverless
 - Combined with Vercel Blob fix, audio should now work end-to-end on Vercel
 - User needs: 1) Create Vercel Blob store, 2) Redeploy
+
+---
+Task ID: multi-provider-alternatives
+Agent: main
+Task: Fix Audio/TTS, Cover Art (Pochet), and Video generation with multi-provider alternatives
+
+Work Log:
+- Diagnosed 3 root cause problems:
+  1. Audio/TTS: Mistral Voxtral uses English voice "en_paul_happy" for French app, API response format inconsistent
+  2. Cover Art: Only z-ai CLI available, fails on Vercel serverless, no API fallback
+  3. Video: All video models commented out in ai-router.ts, canUseVideo=false on ALL plans including Video Creator
+- Created /src/lib/ai-providers.ts — unified multi-provider fallback system
+- AUDIO FIX: Added OpenAI TTS (nova voice, French-capable) + ElevenLabs (multilingual_v2) + Fixed Mistral (fr_celeste instead of en_paul_happy, handles both JSON and binary response formats)
+- COVER FIX: Added OpenAI DALL-E 3 (hd quality) + Stability AI (SD3) as direct API alternatives to z-ai CLI
+- VIDEO FIX: Added Replicate API (Stable Video Diffusion) + Luma AI (Dream Machine) as alternatives
+- Updated ai-engine.ts: All 3 generation functions now use multi-provider system
+- Fixed ai-router.ts: Uncommented video models, added Replicate+Luma, set canUseVideo=true on all non-basic plans
+- Updated /api/melo/route.ts: Uses generateTTS from ai-providers, added /providers endpoint
+- Updated melo-audio.tsx: Added HQ mode toggle, provider label display, preferHighQuality prop
+- Created .env.example: Documents all required API keys with pricing and voice config
+- Fixed TS error in execFfmpeg return type
+- Build verified: compiles successfully
+
+Stage Summary:
+- Root cause: Single-provider dependency (z-ai CLI only) + wrong Mistral voice + video completely disabled
+- Fix: Multi-provider fallback system with 4 TTS providers, 3 cover providers, 3 video providers
+- Provider priority:
+  * TTS: OpenAI → ElevenLabs → Mistral (French) → z-ai CLI
+  * Cover: DALL-E 3 → Stability AI → z-ai image
+  * Video: Replicate → Luma AI → z-ai video
+- Video now enabled for: Artist Starter (economy), Artist Production (economy), Video Creator (standard+economy), Artist Pro (standard+premium+economy), Label (premium+standard+economy)
+- User action: Set at least one API key per category (OPENAI_API_KEY covers both TTS and Cover)

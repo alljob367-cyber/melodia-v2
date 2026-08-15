@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { generateTTS, checkProviderAvailability } from "@/lib/ai-providers";
 
 /**
@@ -6,8 +7,18 @@ import { generateTTS, checkProviderAvailability } from "@/lib/ai-providers";
  * 
  * Tries providers in order: OpenAI TTS → ElevenLabs → Mistral → z-ai CLI
  * Falls back automatically if any provider fails.
+ * Auth required — TTS generation costs credits.
  */
 export async function POST(req: NextRequest) {
+  // Auth check — TTS generation is resource-intensive
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token?.sub) {
+    return NextResponse.json(
+      { success: false, error: { code: "UNAUTHORIZED", message: "Authentification requise" } },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { action, text } = body;
@@ -29,7 +40,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ 
           audioUrl: null, 
           fallback: true,
-          error: "TTS暂时不可用，请稍后再试",
+          error: "TTS non disponible, veuillez réessayer plus tard",
         });
       }
     }

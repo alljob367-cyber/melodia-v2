@@ -27,11 +27,11 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isLoggedIn = false, userName }: MobileMenuProps) {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
-
-  // Fermer au changement de route
+  const [open, setOpen] = useState(false);
+  // Close menu on route change — legitimate sync state reset in effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- closing menu on navigation is a valid sync side-effect
     setOpen(false);
   }, [pathname]);
 

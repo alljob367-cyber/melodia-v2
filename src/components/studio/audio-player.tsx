@@ -61,7 +61,8 @@ export function AudioPlayer({
 
     audio.src = src;
     audio.volume = volume;
-    setIsLoading(true);
+    // Set loading in event callback, not synchronously in effect
+    const handleLoadStart = () => setIsLoading(true);
 
     const handleCanPlay = () => {
       setIsLoading(false);
@@ -78,12 +79,14 @@ export function AudioPlayer({
       setIsPlaying(false);
     };
 
+    audio.addEventListener("loadstart", handleLoadStart);
     audio.addEventListener("canplay", handleCanPlay);
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
 
     return () => {
+      audio.removeEventListener("loadstart", handleLoadStart);
       audio.removeEventListener("canplay", handleCanPlay);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);

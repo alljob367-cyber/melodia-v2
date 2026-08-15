@@ -134,8 +134,9 @@ export async function GET() {
       });
     }
 
-    // Create admin user
-    const adminHashedPw = await bcrypt.hash("admin123", 10);
+    // Create admin user — password from env or fallback (change in production!)
+    const adminPassword = process.env.ADMIN_SEED_PASSWORD || "admin123";
+    const adminHashedPw = await bcrypt.hash(adminPassword, 10);
     const adminUser = await db.user.upsert({
       where: { email: "admin@melodia.ai" },
       update: { password: adminHashedPw },
@@ -148,8 +149,9 @@ export async function GET() {
       },
     });
 
-    // Create demo user
-    const demoHashedPw = await bcrypt.hash("demo123", 10);
+    // Create demo user — password from env or fallback
+    const demoPassword = process.env.DEMO_SEED_PASSWORD || "demo123";
+    const demoHashedPw = await bcrypt.hash(demoPassword, 10);
     const demoUser = await db.user.upsert({
       where: { email: "jean@example.com" },
       update: { password: demoHashedPw },

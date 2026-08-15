@@ -11,7 +11,7 @@ import {
   Zap,
   Upload,
   Link as LinkIcon,
-  Image,
+  Image as ImageIcon,
   Music,
   Clock,
   Play,
@@ -549,7 +549,7 @@ function VideoStudioContent() {
               {/* Cover Art Input */}
               <div>
                 <Label className="text-slate-300 text-sm mb-2 block">
-                  <Image className="h-3.5 w-3.5 inline mr-1" />
+                  <ImageIcon className="h-3.5 w-3.5 inline mr-1" />
                   Pochette / Image de base
                 </Label>
                 <Input

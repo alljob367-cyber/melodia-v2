@@ -68,10 +68,11 @@ export default function SongResultPage() {
 
   useEffect(() => {
     if (!songId) return;
-    setLoading(true);
-    setNotFound(false);
+    let cancelled = false;
+    // Use a callback pattern to avoid synchronous setState in effect
     fetch(`/api/songs/${songId}`)
       .then((res) => {
+        if (cancelled) return null;
         if (res.status === 404) {
           setNotFound(true);
           return null;
@@ -79,16 +80,16 @@ export default function SongResultPage() {
         return res.json();
       })
       .then((data) => {
+        if (cancelled) return;
         if (data?.song) {
           setSong(data.song);
         }
+        setLoading(false);
       })
       .catch(() => {
-        toast.error("Erreur lors du chargement");
-      })
-      .finally(() => {
-        setLoading(false);
+        if (!cancelled) toast.error("Erreur lors du chargement");
       });
+    return () => { cancelled = true; };
   }, [songId]);
 
   const lyricsContent = song?.lyrics?.[0]?.content || "Aucunes paroles disponibles";

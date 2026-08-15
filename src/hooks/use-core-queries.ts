@@ -43,6 +43,19 @@ async function coreFetch<T>(url: string, options?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
+
+  // Check HTTP status first — non-JSON responses (500, 502, etc.) won't have our envelope
+  if (!res.ok) {
+    let message = `Erreur API (${res.status})`;
+    try {
+      const json = await res.json();
+      message = json?.error?.message || json?.error?.code || message;
+    } catch {
+      // Response is not JSON — use default message
+    }
+    throw new Error(message);
+  }
+
   const json = await res.json();
   if (!json.success && json.error) {
     throw new Error(json.error.message || json.error.code || "Erreur API");

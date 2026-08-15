@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Plus, Music, Image, Video, Zap } from "lucide-react";
+import { Wallet, Plus, Music, Image as ImageIcon, Video, Zap } from "lucide-react";
 import Link from "next/link";
 
 interface CreditWalletProps {
@@ -93,7 +93,7 @@ export function CreditWallet({ compact, showPurchase = true, showUsage = true, c
               color="purple"
             />
             <UsageBar
-              icon={<Image className="h-3.5 w-3.5" />}
+              icon={<ImageIcon className="h-3.5 w-3.5" />}
               label="Covers"
               remaining={coversRemaining}
               max={coversRemaining > 100 ? 999 : coversRemaining + 5}

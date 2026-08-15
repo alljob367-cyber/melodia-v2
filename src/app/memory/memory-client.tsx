@@ -27,14 +27,9 @@ import { toast } from "sonner";
 export function MemoryDashboardClient() {
   const { data: session } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   const userName = session?.user?.name || "Créateur";
   const userPlan = (session?.user as any)?.plan || "decouverte";
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
 
   const memoryStats = [
     { label: "Paroles sauvegardées", value: "0", icon: PenTool, color: "text-pink-400", bg: "bg-pink-500/10" },

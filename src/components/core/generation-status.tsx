@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Loader2, Check, X, Clock, Zap,
-  Music, Image, Video, Mic, AudioWaveform,
+  Music, Image as ImageIcon, Video, Mic, AudioWaveform,
 } from "lucide-react";
 
 interface GenerationStatusProps {
@@ -29,7 +29,7 @@ interface GenerationStatusProps {
 const OPERATION_ICONS: Record<string, React.ReactNode> = {
   generate_lyrics: <Mic className="h-4 w-4" />,
   generate_composition: <Music className="h-4 w-4" />,
-  generate_cover: <Image className="h-4 w-4" />,
+  generate_cover: <ImageIcon className="h-4 w-4" />,
   generate_audio: <AudioWaveform className="h-4 w-4" />,
   generate_video_economy: <Video className="h-4 w-4" />,
   generate_video_standard: <Video className="h-4 w-4" />,

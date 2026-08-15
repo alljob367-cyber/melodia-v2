@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Music, Mic, Headphones, AudioWaveform,
-  Video, Image, Film, Clapperboard,
+  Video, Image as ImageIcon, Film, Clapperboard,
   User, Palette, Brain, Sparkles,
   Zap, Loader2, Lock,
 } from "lucide-react";
@@ -98,7 +98,7 @@ export function StudioPanel({ projectId, artistId, onGenerate, className }: Stud
         <PermissionGate feature="CREATE_VIDEO" showDisabled>
           <div className="grid grid-cols-2 gap-3">
             <StudioActionCard
-              icon={<Image className="h-5 w-5" />}
+              icon={<ImageIcon className="h-5 w-5" />}
               title="Cover IA"
               description="Pochette d'album"
               credits={3}

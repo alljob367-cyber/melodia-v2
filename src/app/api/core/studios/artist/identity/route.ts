@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
           return Api.badRequest("projectId et prompt requis pour ai_producer");
         }
         core.requirePermission("USE_AI_PRODUCER");
+        // eslint-disable-next-line react-hooks/rules-of-hooks -- ArtistStudio.useAiProducer is a class method, not a React hook
         result = await ArtistStudio.useAiProducer(ctx, {
           projectId: data.projectId,
           artistId: data.artistId,
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
           return Api.badRequest("projectId et lyricsText requis pour voice_studio");
         }
         core.requirePermission("USE_VOICE_STUDIO");
+        // eslint-disable-next-line react-hooks/rules-of-hooks -- ArtistStudio.useVoiceStudio is a class method, not a React hook
         result = await ArtistStudio.useVoiceStudio(ctx, {
           projectId: data.projectId,
           artistId: data.artistId,

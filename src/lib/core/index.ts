@@ -26,6 +26,15 @@ export type { UserContext } from "./user-context";
 
 export { ProjectService, MediaService, ArtistService, GenerationService, NotificationService } from "./services";
 
+export { AudioStudio, VideoStudio, ArtistStudio, LabelStudio } from "./studio-modules";
+
+export {
+  StripeProvider, WaveProvider, FPayProvider, PaymentOrchestrator,
+} from "./payment-providers";
+export type {
+  CheckoutParams, CheckoutResult, PaymentVerification, WebhookResult,
+} from "./payment-providers";
+
 export { AIOrchestrator } from "./ai-orchestrator";
 export type { GenerationContext, OrchestratorResult } from "./ai-orchestrator";
 

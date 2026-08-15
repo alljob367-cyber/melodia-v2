@@ -6,6 +6,9 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
 // Routes that don't require authentication
 const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/api/health"];
 
+// Webhook routes — called by payment providers, NOT by users
+const webhookRoutes = ["/api/core/payments/webhook"];
+
 // Routes that require admin role
 const adminRoutes = ["/admin", "/api/admin", "/api/seed"];
 
@@ -38,6 +41,11 @@ export async function middleware(request: NextRequest) {
 
   // Allow public routes
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
+  // Allow webhook routes (called by payment providers, not users — no auth)
+  if (webhookRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
@@ -74,6 +82,22 @@ export async function middleware(request: NextRequest) {
       const rateResult = await checkRateLimit(key, config);
       
       if (!rateResult.allowed) {
+        // Log rate limit violation to DB (fire-and-forget)
+        try {
+          const { db } = await import("@/lib/db");
+          await db.rateLimitLog.create({
+            data: {
+              userId: "anonymous", // Will be updated after auth check
+              ipAddress: ip,
+              endpoint: pathname,
+              allowed: false,
+              remaining: 0,
+              limit: config.max,
+              windowMs: config.windowMs,
+            },
+          }).catch(() => {}); // Don't block on DB failure
+        } catch {}
+
         return NextResponse.json(
           { error: "Trop de requêtes. Réessayez dans un instant." },
           {

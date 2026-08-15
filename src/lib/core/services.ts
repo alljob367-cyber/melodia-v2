@@ -68,6 +68,55 @@ export class ProjectService {
     });
   }
 
+  static async update(projectId: string, userId: string, data: {
+    name?: string;
+    description?: string;
+    genre?: string;
+    mood?: string;
+    status?: string;
+  }) {
+    const project = await db.project.findUnique({ where: { id: projectId } });
+    if (!project || project.userId !== userId) {
+      throw new Error("Project not found or access denied");
+    }
+
+    const updated = await db.project.update({
+      where: { id: projectId },
+      data,
+    });
+
+    await EventBus.emit({
+      event: "PROJECT_UPDATED",
+      entityType: "project",
+      entityId: projectId,
+      userId,
+      data: { fields: Object.keys(data) },
+    });
+
+    return updated;
+  }
+
+  static async archive(projectId: string, userId: string) {
+    const project = await db.project.findUnique({ where: { id: projectId } });
+    if (!project || project.userId !== userId) {
+      throw new Error("Project not found or access denied");
+    }
+
+    const updated = await db.project.update({
+      where: { id: projectId },
+      data: { status: "archived" },
+    });
+
+    await EventBus.emit({
+      event: "PROJECT_ARCHIVED",
+      entityType: "project",
+      entityId: projectId,
+      userId,
+    });
+
+    return updated;
+  }
+
   static async addMedia(projectId: string, mediaId: string) {
     return db.media.update({
       where: { id: mediaId },
@@ -151,6 +200,37 @@ export class MediaService {
       where: { artistId, ...(type ? { type } : {}) },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  static async update(mediaId: string, userId: string, data: {
+    name?: string;
+    tags?: string[];
+    metadata?: Record<string, unknown>;
+  }) {
+    // Verify ownership
+    const media = await db.media.findUnique({ where: { id: mediaId } });
+    if (!media || media.userId !== userId) {
+      throw new Error("Media not found or access denied");
+    }
+
+    const updated = await db.media.update({
+      where: { id: mediaId },
+      data: {
+        name: data.name,
+        tags: data.tags ? JSON.stringify(data.tags) : undefined,
+        metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+      },
+    });
+
+    await EventBus.emit({
+      event: "MEDIA_UPDATED",
+      entityType: "media",
+      entityId: mediaId,
+      userId,
+      data: { fields: Object.keys(data) },
+    });
+
+    return updated;
   }
 
   static async delete(mediaId: string, userId: string) {

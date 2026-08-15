@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { MelodiaCore, PermissionDeniedError, MediaService } from "@/lib/core";
 import { db } from "@/lib/db";
+import { z } from "zod";
 
 /**
  * GET /api/core/media/[id]
@@ -96,6 +97,63 @@ export async function DELETE(
       );
     }
     console.error("[core/media/[id] DELETE] Error:", errorMsg);
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
+  }
+}
+
+// ============ PATCH: Update media metadata ============
+
+const mediaUpdateSchema = z.object({
+  name: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+/**
+ * PATCH /api/core/media/[id]
+ * Update media metadata (name, tags, custom metadata).
+ * Requires UPDATE_MEDIA permission (or ownership).
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token?.sub) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const body = await req.json();
+    const data = mediaUpdateSchema.parse(body);
+
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
+    core.requirePermission("UPDATE_MEDIA");
+
+    const updated = await MediaService.update(id, token.sub, data);
+
+    return NextResponse.json({ success: true, media: updated });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
+    }
+    if (err instanceof PermissionDeniedError) {
+      return NextResponse.json(
+        { error: "Permission refusée : " + err.message },
+        { status: 403 }
+      );
+    }
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    if (errorMsg.includes("not found") || errorMsg.includes("access denied")) {
+      return NextResponse.json(
+        { error: "Média non trouvé ou accès refusé" },
+        { status: 404 }
+      );
+    }
+    console.error("[core/media/[id] PATCH] Error:", errorMsg);
     return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }

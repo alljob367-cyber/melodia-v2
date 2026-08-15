@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { MelodiaCore, PermissionDeniedError } from "@/lib/core";
 import { PaymentOrchestrator } from "@/lib/core/payment-providers";
 import { db } from "@/lib/db";
-import { z } from "zod";
+import { Api, ApiSchemas } from "@/lib/core";
 
 /**
  * POST /api/core/payments/checkout
@@ -13,26 +13,15 @@ import { z } from "zod";
  * 
  * Pipeline: Auth → Core → Permission → Create Payment → Create Checkout → Return URL
  */
-const checkoutSchema = z.object({
-  packId: z.string(),
-  provider: z.enum(["stripe", "wave", "fpay", "manual"]),
-  // Mobile-specific fields
-  phoneNumber: z.string().optional(),     // For Wave/FPay
-  mobileProvider: z.enum(["orange", "mtn", "moov"]).optional(), // For FPay
-  // Redirect URLs
-  successUrl: z.string().optional(),
-  cancelUrl: z.string().optional(),
-});
-
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   try {
     const body = await req.json();
-    const data = checkoutSchema.parse(body);
+    const data = ApiSchemas.CheckoutSchema.parse(body);
 
     // Initialize Core and check permission
     const core = new MelodiaCore(token.sub);
@@ -45,10 +34,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!pack) {
-      return NextResponse.json(
-        { error: "Pack de crédits non trouvé ou inactif" },
-        { status: 404 }
-      );
+      return Api.notFound("Pack de crédits");
     }
 
     // Create pending payment record
@@ -100,8 +86,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
+    return Api.ok({
       payment: {
         id: payment.id,
         amountFcfa: pack.price,
@@ -117,14 +102,9 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
-    }
     if (err instanceof PermissionDeniedError) {
-      return NextResponse.json({ error: "Permission refusée : " + err.message }, { status: 403 });
+      return Api.forbidden(err.message);
     }
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/payments/checkout] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

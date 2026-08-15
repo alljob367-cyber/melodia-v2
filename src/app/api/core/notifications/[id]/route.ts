@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NotificationService } from "@/lib/core";
+import { Api } from "@/lib/core/api-responses";
 import { db } from "@/lib/db";
 
 /**
@@ -13,7 +14,7 @@ export async function PATCH(
 ) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   const { id } = await params;
@@ -25,25 +26,17 @@ export async function PATCH(
     });
 
     if (!notification) {
-      return NextResponse.json(
-        { error: "Notification non trouvée" },
-        { status: 404 }
-      );
+      return Api.notFound("Notification");
     }
 
     if (notification.userId !== token.sub) {
-      return NextResponse.json(
-        { error: "Accès refusé" },
-        { status: 403 }
-      );
+      return Api.forbidden("Accès refusé");
     }
 
     const updated = await NotificationService.markRead(id);
 
-    return NextResponse.json({ success: true, notification: updated });
+    return Api.ok({ notification: updated });
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/notifications/[id] PATCH] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

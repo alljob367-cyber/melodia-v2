@@ -551,6 +551,7 @@ model Generation {
   @@index([artistId])
   @@index([operation])
   @@index([status])
+  @@index([organizationId])
 }
 
 // ============ NOTIFICATIONS ============

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { PaymentOrchestrator } from "@/lib/core/payment-providers";
 import { db } from "@/lib/db";
-import { z } from "zod";
+import { Api, ApiSchemas } from "@/lib/core";
 
 /**
  * POST /api/core/payments/verify
@@ -12,21 +12,15 @@ import { z } from "zod";
  * 
  * Pipeline: Auth → Find Payment → Verify with Provider → Complete → Add Credits → Emit
  */
-const verifySchema = z.object({
-  paymentId: z.string(),     // Our internal payment ID
-  checkoutId: z.string(),    // Provider's checkout/session ID
-  provider: z.enum(["stripe", "wave", "fpay", "manual"]),
-});
-
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   try {
     const body = await req.json();
-    const data = verifySchema.parse(body);
+    const data = ApiSchemas.VerifyPaymentSchema.parse(body);
 
     // Find the payment record
     const payment = await db.payment.findUnique({
@@ -34,18 +28,17 @@ export async function POST(req: NextRequest) {
     });
 
     if (!payment) {
-      return NextResponse.json({ error: "Paiement non trouvé" }, { status: 404 });
+      return Api.notFound("Paiement");
     }
 
     if (payment.userId !== token.sub) {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+      return Api.forbidden("Accès refusé");
     }
 
     if (payment.status === "completed") {
       // Already completed — return current state
       const wallet = await db.userCredits.findUnique({ where: { userId: token.sub } });
-      return NextResponse.json({
-        success: true,
+      return Api.ok({
         status: "completed",
         credits: payment.credits,
         wallet: wallet ? { credits: wallet.credits, effective: wallet.credits - wallet.creditsReserved } : null,
@@ -59,8 +52,7 @@ export async function POST(req: NextRequest) {
       // Complete the payment and add credits
       const result = await PaymentOrchestrator.completePayment(payment.id, verification);
 
-      return NextResponse.json({
-        success: true,
+      return Api.ok({
         status: "completed",
         credits: result.credits,
         wallet: result.wallet,
@@ -68,21 +60,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Payment still pending or failed
-    return NextResponse.json({
-      success: false,
+    const message = verification.status === "pending"
+      ? "Paiement en cours de traitement. Réessayez dans quelques instants."
+      : verification.status === "expired"
+      ? "Le paiement a expiré. Veuillez réessayer."
+      : "Le paiement a échoué. Veuillez réessayer.";
+
+    return Api.ok({
       status: verification.status,
-      message: verification.status === "pending"
-        ? "Paiement en cours de traitement. Réessayez dans quelques instants."
-        : verification.status === "expired"
-        ? "Le paiement a expiré. Veuillez réessayer."
-        : "Le paiement a échoué. Veuillez réessayer.",
+      message,
     });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
-    }
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/payments/verify] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

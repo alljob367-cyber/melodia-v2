@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { MelodiaCore } from "@/lib/core";
-import { z } from "zod";
+import { MelodiaCore, PermissionDeniedError } from "@/lib/core";
+import { Api, ApiSchemas } from "@/lib/core";
 
 /**
  * POST /api/core/generate
@@ -9,60 +9,25 @@ import { z } from "zod";
  * 
  * Pipeline: Auth → UserContext → Permission → Credit → Reserve → Generate → Media → Consume
  */
-const generateSchema = z.object({
-  operation: z.string(),
-  projectId: z.string().optional(),
-  artistId: z.string().optional(),
-  title: z.string().optional(),
-  style: z.string().optional(),
-  mood: z.string().optional(),
-  theme: z.string().optional(),
-  language: z.string().default("fr"),
-  lyrics: z.string().optional(),
-  additionalPrompt: z.string().optional(),
-  coverUrl: z.string().optional(),
-  quality: z.enum(["economy", "standard", "premium"]).optional(),
-  durationSeconds: z.number().optional(),
-  availableMediaIds: z.array(z.string()).optional(),
-});
-
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   try {
     const body = await req.json();
-    const data = generateSchema.parse(body);
+    const data = ApiSchemas.GenerateSchema.parse(body);
 
     // Initialize Core
     const core = new MelodiaCore(token.sub);
     await core.initialize();
 
     // Permission check based on operation
-    const permMap: Record<string, string> = {
-      generate_lyrics: "CREATE_LYRICS",
-      generate_composition: "CREATE_COMPOSITION",
-      generate_cover: "CREATE_COVER",
-      generate_audio: "CREATE_AUDIO",
-      generate_video_economy: "CREATE_VIDEO",
-      generate_video_standard: "CREATE_VIDEO",
-      generate_video_premium: "CREATE_VIDEO",
-      generate_storyboard: "CREATE_STORYBOARD",
-      full_song: "CREATE_SONG",
-    };
-
+    const permMap = ApiSchemas.OPERATION_PERMISSION_MAP;
     const requiredPerm = permMap[data.operation];
     if (requiredPerm) {
-      try {
-        core.requirePermission(requiredPerm as any);
-      } catch {
-        return NextResponse.json(
-          { error: `Permission refusée: '${data.operation}' non disponible sur votre plan` },
-          { status: 403 }
-        );
-      }
+      core.requirePermission(requiredPerm as any);
     }
 
     // Execute through the unified pipeline
@@ -86,14 +51,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (result.status === "failed") {
-      return NextResponse.json(
-        { error: result.error, generationId: result.generationId },
-        { status: 500 }
-      );
+      return Api.error("GENERATION_FAILED", result.error || "Generation failed", 500, {
+        generationId: result.generationId,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
+    return Api.ok({
       generationId: result.generationId,
       operation: result.operation,
       provider: result.provider,
@@ -102,11 +65,9 @@ export async function POST(req: NextRequest) {
       duration: result.duration,
     });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
+    if (err instanceof PermissionDeniedError) {
+      return Api.forbidden(err.message);
     }
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/generate] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

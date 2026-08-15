@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { MelodiaCore, PermissionDeniedError, ArtistService } from "@/lib/core";
+import { Api, ApiSchemas } from "@/lib/core";
 import { db } from "@/lib/db";
-import { z } from "zod";
 
 /**
  * GET /api/core/artists/[id]
@@ -14,7 +14,7 @@ export async function GET(
 ) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   const { id } = await params;
@@ -25,17 +25,12 @@ export async function GET(
 
     const identity = await core.getArtistIdentity(id);
     if (!identity) {
-      return NextResponse.json(
-        { error: "Artiste non trouvé" },
-        { status: 404 }
-      );
+      return Api.notFound("Artiste");
     }
 
-    return NextResponse.json({ identity });
+    return Api.ok({ identity });
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/artists/[id] GET] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }
 
@@ -43,54 +38,28 @@ export async function GET(
  * PATCH /api/core/artists/[id]
  * Update an artist identity. Requires UPDATE_ARTIST_IDENTITY permission and ownership.
  */
-const updateArtistIdentitySchema = z.object({
-  visualStyle: z.record(z.string(), z.unknown()).optional(),
-  referenceImages: z.array(
-    z.object({
-      id: z.string(),
-      url: z.string(),
-      label: z.string(),
-      type: z.string(),
-    })
-  ).optional(),
-  colorPalette: z.array(z.string()).optional(),
-  visualConcepts: z.array(
-    z.object({
-      name: z.string(),
-      description: z.string(),
-      imageUrl: z.string().optional(),
-    })
-  ).optional(),
-});
-
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   const { id } = await params;
 
   try {
     const body = await req.json();
-    const data = updateArtistIdentitySchema.parse(body);
+    const data = ApiSchemas.UpdateArtistIdentitySchema.parse(body);
 
     // Ownership check
     const artist = await db.artist.findUnique({ where: { id } });
     if (!artist) {
-      return NextResponse.json(
-        { error: "Artiste non trouvé" },
-        { status: 404 }
-      );
+      return Api.notFound("Artiste");
     }
     if (artist.userId !== token.sub) {
-      return NextResponse.json(
-        { error: "Accès refusé" },
-        { status: 403 }
-      );
+      return Api.forbidden("Accès refusé");
     }
 
     const core = new MelodiaCore(token.sub);
@@ -99,22 +68,11 @@ export async function PATCH(
 
     const updated = await ArtistService.updateIdentity(id, token.sub, data);
 
-    return NextResponse.json({ success: true, artist: updated });
+    return Api.ok({ artist: updated });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: err.issues[0].message },
-        { status: 400 }
-      );
-    }
     if (err instanceof PermissionDeniedError) {
-      return NextResponse.json(
-        { error: "Permission refusée : " + err.message },
-        { status: 403 }
-      );
+      return Api.forbidden(err.message);
     }
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/artists/[id] PATCH] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

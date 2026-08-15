@@ -247,7 +247,7 @@ export const OPERATION_PERMISSION_MAP: Record<string, string> = {
   generate_lyrics: "CREATE_LYRICS",
   generate_composition: "CREATE_COMPOSITION",
   generate_cover: "CREATE_COVER",
-  generate_audio: "CREATE_SONG",
+  generate_audio: "CREATE_AUDIO",
   generate_video_economy: "CREATE_VIDEO",
   generate_video_standard: "CREATE_VIDEO",
   generate_video_premium: "CREATE_VIDEO",
@@ -260,7 +260,7 @@ export const OPERATION_PERMISSION_MAP: Record<string, string> = {
 
 export const AUDIO_OPERATION_PERMISSION_MAP: Record<string, string> = {
   generate_lyrics: "CREATE_LYRICS",
-  generate_audio: "CREATE_SONG",
+  generate_audio: "CREATE_AUDIO",
   mix_master: "USE_MIX_MASTER",
   full_song: "CREATE_SONG",
 };

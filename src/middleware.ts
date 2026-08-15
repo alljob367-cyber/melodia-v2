@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { checkRateLimit } from "@/lib/security/rate-limit";
+
+// ============ ROUTE CONFIGURATION ============
 
 // Routes that don't require authentication
 const publicRoutes = ["/", "/login", "/signup", "/api/auth", "/api/signup", "/api/health"];
@@ -12,29 +13,55 @@ const webhookRoutes = ["/api/core/payments/webhook"];
 // Routes that require admin role
 const adminRoutes = ["/admin", "/api/admin", "/api/seed"];
 
-// ============ RATE LIMIT CONFIGURATION ============
+// ============ IN-MEMORY RATE LIMITING (lightweight, no Redis/DB) ============
 
-interface RouteRateLimit {
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+// Clean up expired entries every 60s
+let lastCleanup = Date.now();
+function cleanupStore() {
+  const now = Date.now();
+  if (now - lastCleanup < 60_000) return;
+  lastCleanup = now;
+  for (const [key, entry] of rateLimitStore) {
+    if (now > entry.resetAt) rateLimitStore.delete(key);
+  }
+}
+
+interface RateLimitConfig {
   windowMs: number;
   max: number;
 }
 
-const RATE_LIMITS: Record<string, RouteRateLimit> = {
-  // AI generation: 5 per minute (expensive)
+const RATE_LIMITS: Record<string, RateLimitConfig> = {
   "/api/core/generate": { windowMs: 60_000, max: 5 },
   "/api/generate": { windowMs: 60_000, max: 5 },
-  // Credit purchase: 3 per minute
   "/api/core/credits/purchase": { windowMs: 60_000, max: 3 },
-  // Auth: 10 per minute
   "/api/auth": { windowMs: 60_000, max: 10 },
-  // Signup: 3 per hour
   "/api/signup": { windowMs: 3_600_000, max: 3 },
-  // Media upload: 10 per minute
   "/api/core/media/upload": { windowMs: 60_000, max: 10 },
 };
 
-// Default API rate limit: 100 per minute
-const DEFAULT_API_LIMIT: RouteRateLimit = { windowMs: 60_000, max: 100 };
+const DEFAULT_API_LIMIT: RateLimitConfig = { windowMs: 60_000, max: 100 };
+
+function checkRateLimit(key: string, config: RateLimitConfig): { allowed: boolean; remaining: number; resetTime: number } {
+  cleanupStore();
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    // New window
+    const resetTime = now + config.windowMs;
+    rateLimitStore.set(key, { count: 1, resetAt: resetTime });
+    return { allowed: true, remaining: config.max - 1, resetTime };
+  }
+
+  entry.count++;
+  const remaining = Math.max(0, config.max - entry.count);
+  return { allowed: entry.count <= config.max, remaining, resetTime: entry.resetAt };
+}
+
+// ============ MIDDLEWARE ============
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -59,11 +86,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ============ RATE LIMITING ============
-  // Apply rate limits to API routes
+  // ============ RATE LIMITING (in-memory, no DB/Redis) ============
   if (pathname.startsWith("/api/")) {
-    // Find matching rate limit config
-    let rateLimitConfig: RouteRateLimit | null = null;
+    let rateLimitConfig: RateLimitConfig | null = null;
     for (const [route, config] of Object.entries(RATE_LIMITS)) {
       if (pathname.startsWith(route)) {
         rateLimitConfig = config;
@@ -71,34 +96,16 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Apply rate limit (default for API routes if no specific config)
     if (rateLimitConfig || pathname.startsWith("/api/core/")) {
       const config = rateLimitConfig || DEFAULT_API_LIMIT;
-      const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || 
-                 request.headers.get("x-real-ip") || 
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ||
+                 request.headers.get("x-real-ip") ||
                  "unknown";
       const key = `${ip}:${pathname}`;
-      
-      const rateResult = await checkRateLimit(key, config);
-      
-      if (!rateResult.allowed) {
-        // Log rate limit violation to DB (fire-and-forget)
-        try {
-          const { db } = await import("@/lib/db");
-          await db.rateLimitLog.create({
-            data: {
-              userId: "anonymous", // Will be updated after auth check
-              ipAddress: ip,
-              endpoint: pathname,
-              allowed: false,
-              remaining: 0,
-              limit: config.max,
-              windowMs: config.windowMs,
-              resetAt: new Date(rateResult.resetTime),
-            },
-          }).catch(() => {}); // Don't block on DB failure
-        } catch {}
 
+      const rateResult = checkRateLimit(key, config);
+
+      if (!rateResult.allowed) {
         return NextResponse.json(
           { error: "Trop de requêtes. Réessayez dans un instant." },
           {
@@ -115,13 +122,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Get the decoded NextAuth JWT token (handles JWE decryption automatically)
+  // ============ AUTH CHECK ============
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  // No valid session — redirect to login or return 401
   if (!token) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -131,10 +137,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin route protection — check role from decoded token
+  // Admin route protection
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
     const role = token.role as string | undefined;
-
     if (role !== "admin") {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(

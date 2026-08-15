@@ -139,7 +139,7 @@ export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: { id: string; name?: string; description?: string }) =>
-      coreFetch(`//api/core/projects/${id}`, {
+      coreFetch(`/api/core/projects/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),

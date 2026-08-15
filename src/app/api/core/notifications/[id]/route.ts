@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NotificationService } from "@/lib/core";
-import { Api } from "@/lib/core/api-responses";
+import { Api } from "@/lib/core";
 import { db } from "@/lib/db";
 
 /**

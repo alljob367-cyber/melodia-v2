@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { db } from "@/lib/db";
-import { Api } from "@/lib/core/api-responses";
+import { MelodiaCore, Api } from "@/lib/core";
 
 /**
  * GET /api/core/subscriptions/current
@@ -14,26 +13,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const subscription = await db.subscription.findUnique({
-      where: { userId: token.sub },
-    });
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
 
-    if (!subscription) {
-      // Auto-create basic subscription if none exists
-      const user = await db.user.findUnique({
-        where: { id: token.sub },
-        select: { plan: true },
-      });
-
-      return Api.ok({
-        subscription: {
-          plan: user?.plan || "basic",
-          status: "active",
-          amountFcfa: 0,
-          interval: "month",
-        },
-      });
-    }
+    const subscription = await core.getCurrentSubscription();
 
     return Api.ok({ subscription });
   } catch (err) {

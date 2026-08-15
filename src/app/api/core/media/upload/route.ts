@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { MelodiaCore, PermissionDeniedError } from "@/lib/core";
-import { z } from "zod";
-import { Api } from "@/lib/core/api-responses";
+import { MelodiaCore, PermissionDeniedError, Api, ApiSchemas } from "@/lib/core";
 
 /**
  * POST /api/core/media/upload
@@ -15,23 +13,6 @@ import { Api } from "@/lib/core/api-responses";
  * 
  * Pipeline: Auth → Core → Permission → Validate → Create Media → Emit
  */
-const uploadSchema = z.object({
-  name: z.string(),
-  type: z.enum(["audio", "image", "video", "document", "lyrics"]),
-  mimeType: z.string(),
-  url: z.string().url(),
-  thumbnailUrl: z.string().url().optional(),
-  fileSizeKb: z.number().optional(),
-  duration: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  projectId: z.string().optional(),
-  artistId: z.string().optional(),
-  songId: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-  isPublic: z.boolean().default(false),
-});
 
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -41,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const data = uploadSchema.parse(body);
+    const data = ApiSchemas.UploadMediaSchema.parse(body);
 
     // Initialize Core
     const core = new MelodiaCore(token.sub);

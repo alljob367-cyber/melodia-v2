@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { MelodiaCore, PermissionDeniedError } from "@/lib/core";
-import { db } from "@/lib/db";
-import { Api, ApiSchemas } from "@/lib/core";
+import { MelodiaCore, PermissionDeniedError, Api, ApiSchemas } from "@/lib/core";
 
 /**
  * GET /api/core/artists
@@ -15,15 +13,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const artists = await db.artist.findMany({
-      where: { userId: token.sub },
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: {
-          select: { projects: true, media: true },
-        },
-      },
-    });
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
+
+    const artists = await core.listArtists();
 
     return Api.ok({ artists });
   } catch (err) {

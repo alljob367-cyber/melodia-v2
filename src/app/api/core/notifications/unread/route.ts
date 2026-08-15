@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { db } from "@/lib/db";
-import { Api } from "@/lib/core/api-responses";
+import { MelodiaCore, Api } from "@/lib/core";
 
 /**
  * GET /api/core/notifications/unread
@@ -14,16 +13,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [count, notifications] = await Promise.all([
-      db.notification.count({
-        where: { userId: token.sub, isRead: false },
-      }),
-      db.notification.findMany({
-        where: { userId: token.sub, isRead: false },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-    ]);
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
+
+    const { count, notifications } = await core.getUnreadNotifications();
 
     return Api.ok({ count, notifications });
   } catch (err) {

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { db } from "@/lib/db";
-import { Api, ApiSchemas } from "@/lib/core";
+import { MelodiaCore, Api, ApiSchemas } from "@/lib/core";
 
 /**
  * GET /api/core/media
@@ -25,26 +24,16 @@ export async function GET(req: NextRequest) {
     const queryParams = Object.fromEntries(url.searchParams.entries());
     const { type, projectId, artistId, page, limit } = ApiSchemas.ListMediaSchema.parse(queryParams);
 
-    const where = {
-      userId: token.sub,
-      ...(type ? { type } : {}),
-      ...(projectId ? { projectId } : {}),
-      ...(artistId ? { artistId } : {}),
-    };
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
 
-    const [total, media] = await Promise.all([
-      db.media.count({ where }),
-      db.media.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          project: { select: { id: true, name: true } },
-          artist: { select: { id: true, name: true } },
-        },
-      }),
-    ]);
+    const { total, media } = await core.listMedia({
+      page,
+      limit,
+      type,
+      projectId,
+      artistId,
+    });
 
     return Api.paginated(media, {
       page,

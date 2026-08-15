@@ -115,6 +115,38 @@ export class MelodiaCore {
   }
 
   /**
+   * Get paginated credit transaction history.
+   */
+  async getCreditHistory(params: { page?: number; limit?: number; category?: string; type?: string }) {
+    this.ensureInitialized();
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const where: any = { userId: this.userId };
+    if (params.category) where.category = params.category;
+    if (params.type) where.type = params.type;
+
+    const [transactions, total] = await Promise.all([
+      db.creditTransaction.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.creditTransaction.count({ where }),
+    ]);
+
+    return {
+      transactions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
    * Purchase credits through a credit pack.
    * Creates Payment + CreditTransaction + updates wallet.
    */
@@ -308,6 +340,32 @@ export class MelodiaCore {
 
   // ============ MEDIA ============
 
+  async listMedia(options?: { page?: number; limit?: number; type?: string; projectId?: string; artistId?: string }) {
+    this.ensureInitialized();
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
+    const where: any = { userId: this.userId };
+    if (options?.type) where.type = options.type;
+    if (options?.projectId) where.projectId = options.projectId;
+    if (options?.artistId) where.artistId = options.artistId;
+
+    const [total, media] = await Promise.all([
+      db.media.count({ where }),
+      db.media.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          project: { select: { id: true, name: true } },
+          artist: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    return { total, media };
+  }
+
   async createMedia(data: Parameters<typeof MediaService.create>[1]) {
     this.ensureInitialized();
     this.requirePermission("UPLOAD_MEDIA");
@@ -325,6 +383,23 @@ export class MelodiaCore {
   }
 
   // ============ ARTIST ============
+
+  async listArtists(options?: { page?: number; limit?: number }) {
+    this.ensureInitialized();
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
+    return db.artist.findMany({
+      where: { userId: this.userId },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        _count: {
+          select: { projects: true, media: true },
+        },
+      },
+    });
+  }
 
   async createArtist(data: Parameters<typeof ArtistService.create>[1]) {
     this.ensureInitialized();
@@ -348,8 +423,19 @@ export class MelodiaCore {
     return NotificationService.getRecent(this.userId, limit);
   }
 
-  async getUnreadNotifications() {
-    return NotificationService.getUnread(this.userId);
+  async getUnreadNotifications(limit: number = 10) {
+    this.ensureInitialized();
+    const [count, notifications] = await Promise.all([
+      db.notification.count({
+        where: { userId: this.userId, isRead: false },
+      }),
+      db.notification.findMany({
+        where: { userId: this.userId, isRead: false },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      }),
+    ]);
+    return { count, notifications };
   }
 
   async markNotificationRead(notificationId: string) {
@@ -361,6 +447,24 @@ export class MelodiaCore {
   }
 
   // ============ SUBSCRIPTIONS ============
+
+  async getCurrentSubscription() {
+    this.ensureInitialized();
+    const subscription = await db.subscription.findUnique({
+      where: { userId: this.userId },
+    });
+
+    if (!subscription) {
+      return {
+        plan: this.context.plan || "basic",
+        status: "active",
+        amountFcfa: 0,
+        interval: "month",
+      };
+    }
+
+    return subscription;
+  }
 
   async changePlan(newPlan: string) {
     this.ensureInitialized();

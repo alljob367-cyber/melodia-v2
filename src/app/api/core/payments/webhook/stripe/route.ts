@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StripeProvider, PaymentOrchestrator } from "@/lib/core/payment-providers";
+import { Api } from "@/lib/core";
 import { db } from "@/lib/db";
 
 /**
@@ -19,7 +20,6 @@ export async function POST(req: NextRequest) {
     const result = await StripeProvider.handleWebhook(payload, signature);
 
     if (result.status === "completed" && result.paymentId) {
-      // Find our internal payment by the checkout session ID
       const payment = await db.payment.findFirst({
         where: { providerId: result.paymentId, provider: "stripe" },
       });
@@ -48,10 +48,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Stripe expects a 200 response
     return NextResponse.json({ received: true });
   } catch (err) {
     console.error("[webhook/stripe] Error:", err);
-    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+    return Api.internalError("Webhook processing failed");
   }
 }

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { CreditEngine } from "@/lib/core/credit-engine";
-import { Api } from "@/lib/core/api-responses";
+import { MelodiaCore, Api } from "@/lib/core";
 
 /**
  * GET /api/core/credits/wallet
@@ -14,7 +13,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const wallet = await CreditEngine.getWallet(token.sub);
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
+
+    const wallet = await core.getWallet();
     if (!wallet) {
       return Api.notFound("Portefeuille");
     }

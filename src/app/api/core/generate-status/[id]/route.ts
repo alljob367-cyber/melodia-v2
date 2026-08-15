@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { db } from "@/lib/db";
-import { Api } from "@/lib/core/api-responses";
+import { MelodiaCore, Api } from "@/lib/core";
 
 /**
  * GET /api/core/generate-status/[id]
  * Returns the status of a generation job (for polling progress).
- * Also checks ownership — users can only see their own generations.
+ * Uses MelodiaCore.getGenerationStatus() which checks ownership.
  */
 export async function GET(
   req: NextRequest,
@@ -20,38 +19,10 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const generation = await db.generation.findUnique({
-      where: { id },
-      include: {
-        outputMedia: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            url: true,
-            mimeType: true,
-            duration: true,
-            width: true,
-            height: true,
-          },
-        },
-      },
-    });
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
 
-    if (!generation) {
-      return Api.notFound("Génération");
-    }
-
-    // Ownership check
-    if (generation.userId !== token.sub) {
-      const user = await db.user.findUnique({
-        where: { id: token.sub },
-        select: { role: true },
-      });
-      if (user?.role !== "admin") {
-        return Api.forbidden("Accès refusé");
-      }
-    }
+    const generation = await core.getGenerationStatus(id);
 
     return Api.ok({
       generation: {
@@ -72,6 +43,12 @@ export async function GET(
       },
     });
   } catch (err) {
+    if (err instanceof Error && err.message.includes("non trouvée")) {
+      return Api.notFound("Génération");
+    }
+    if (err instanceof Error && err.message.includes("accès refusé")) {
+      return Api.forbidden("Accès refusé");
+    }
     return Api.handleRouteError(err);
   }
 }

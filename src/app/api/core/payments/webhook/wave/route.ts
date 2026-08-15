@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WaveProvider, PaymentOrchestrator } from "@/lib/core/payment-providers";
+import { Api } from "@/lib/core";
 import { db } from "@/lib/db";
 
 /**
@@ -33,6 +34,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err) {
     console.error("[webhook/wave] Error:", err);
-    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+    return Api.internalError("Webhook processing failed");
   }
 }

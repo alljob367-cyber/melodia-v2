@@ -346,3 +346,31 @@ Stage Summary:
 - Dashboard upgraded to use Core API + React Query
 - TypeScript: 0 errors in project src/ (only 2 pre-existing in skills/)
 - Next.js build: SUCCESS — all pages compiled and routed
+---
+Task ID: 7
+Agent: Super Z (Main)
+Task: PHASE 7 — INTÉGRATION Complète Frontend ↔ Backend
+
+Work Log:
+- Audited all 27 Core API routes (12 OK, 15 Issues, 0 Missing)
+- Identified 5 P0 critical issues and 10 P1 important issues
+- Fixed P0: Double-slash URL in useUpdateProject (//api → /api)
+- Fixed P0: projects/[id] PATCH/DELETE now use core.updateProject() / core.archiveProject() with EventBus
+- Fixed P0: credits/purchase now delegates to core.purchaseCredits() (no duplicate logic)
+- Fixed P0: subscriptions/change now delegates to core.changePlan() (no duplicate logic)
+- Fixed P1: 7 routes that bypassed Core now use Core methods (generate-status, credits/wallet, notifications/unread, context, artists GET, media GET, subscriptions/current)
+- Added 4 new MelodiaCore methods: listArtists(), listMedia(), getCurrentSubscription(), getCreditHistory()
+- Fixed P1: Local schemas replaced with ApiSchemas (media/upload, credits/history)
+- Fixed P1: Webhook routes use Api.internalError() instead of raw NextResponse.json()
+- Fixed P1: Standardized all Api imports to @/lib/core (2 files updated)
+- Verified: 0 TypeScript errors in src/, Next.js build SUCCESS, 27 Core API routes compiled
+
+Stage Summary:
+- All 27 API routes now properly use MelodiaCore pipeline (Auth → Context → Perm → Credit → Execute → Register → Emit → Notify)
+- All routes use centralized ApiSchemas for validation
+- All routes use Api response helpers for consistent responses
+- All webhook routes use Api helpers for error responses
+- All imports standardized to @/lib/core
+- Frontend ↔ Backend: 100% endpoint coverage (all 30 frontend hooks have matching API routes)
+- TypeScript: 0 errors in src/
+- Next.js build: SUCCESS

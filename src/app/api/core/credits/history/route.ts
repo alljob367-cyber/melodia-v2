@@ -1,20 +1,12 @@
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { db } from "@/lib/db";
-import { z } from "zod";
-import { Api } from "@/lib/core/api-responses";
+import { MelodiaCore } from "@/lib/core";
+import { Api, ApiSchemas } from "@/lib/core";
 
 /**
  * GET /api/core/credits/history
- * Returns paginated credit transaction history.
+ * Returns paginated credit transaction history through MelodiaCore.
  */
-const querySchema = z.object({
-  page: z.coerce.number().default(1),
-  limit: z.coerce.number().default(20),
-  category: z.string().optional(),
-  type: z.string().optional(),
-});
-
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
@@ -23,28 +15,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = new URL(req.url);
-    const params = querySchema.parse(Object.fromEntries(url.searchParams));
+    const params = ApiSchemas.CreditHistorySchema.parse(Object.fromEntries(url.searchParams));
 
-    const where: any = { userId: token.sub };
-    if (params.category) where.category = params.category;
-    if (params.type) where.type = params.type;
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
 
-    const [transactions, total] = await Promise.all([
-      db.creditTransaction.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (params.page - 1) * params.limit,
-        take: params.limit,
-      }),
-      db.creditTransaction.count({ where }),
-    ]);
+    const result = await core.getCreditHistory(params);
 
-    return Api.paginated(transactions, {
-      page: params.page,
-      limit: params.limit,
-      total,
-      totalPages: Math.ceil(total / params.limit),
-    });
+    return Api.ok(result);
   } catch (err) {
     return Api.handleRouteError(err);
   }

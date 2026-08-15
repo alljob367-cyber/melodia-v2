@@ -1,8 +1,14 @@
 /**
- * MELODIA CORE — Central Coordinator
+ * MELODIA CORE — Central Coordinator v2.0
  * 
  * The single point of coordination for the entire platform.
  * No module bypasses MelodiaCore for important operations.
+ * 
+ * Usage:
+ *   const core = new MelodiaCore(userId);
+ *   await core.initialize();
+ *   core.requirePermission("CREATE_VIDEO");
+ *   await core.generate({ operation: "generate_video_economy", ... });
  */
 
 // Re-export all Core services
@@ -30,16 +36,9 @@ import { PermissionEngine, MelodiaOperation } from "./permission-engine";
 import { CreditEngine, CreditOperation } from "./credit-engine";
 import { AIOrchestrator, GenerationContext } from "./ai-orchestrator";
 import { ProjectService, MediaService, ArtistService, GenerationService, NotificationService } from "./services";
+import { EventBus } from "./event-bus";
+import { db } from "../db";
 
-/**
- * MelodiaCore — The heart of the platform.
- * 
- * Usage:
- *   const core = new MelodiaCore(userId);
- *   await core.initialize();
- *   core.requirePermission("CREATE_VIDEO");
- *   await core.generate({ operation: "generate_video_economy", ... });
- */
 export class MelodiaCore {
   public context!: UserContext;
   private initialized = false;
@@ -67,7 +66,6 @@ export class MelodiaCore {
 
   // ============ PERMISSIONS ============
 
-  /** Check if current user can perform operation */
   canPerform(operation: MelodiaOperation): boolean {
     this.ensureInitialized();
     return PermissionEngine.checkPermission(
@@ -77,7 +75,6 @@ export class MelodiaCore {
     ).allowed;
   }
 
-  /** Require permission — throws if denied */
   requirePermission(operation: MelodiaOperation): void {
     this.ensureInitialized();
     PermissionEngine.requirePermission(
@@ -89,7 +86,6 @@ export class MelodiaCore {
 
   // ============ CREDITS ============
 
-  /** Check if user has enough credits for an operation */
   async hasCredits(operation: CreditOperation, options?: { durationSeconds?: number }): Promise<boolean> {
     this.ensureInitialized();
     const estimate = await import("./credit-engine").then(m => m.estimateCost(operation, options));
@@ -97,24 +93,136 @@ export class MelodiaCore {
     return check.hasEnough;
   }
 
-  /** Get credit wallet */
   async getWallet() {
     this.ensureInitialized();
     return CreditEngine.getWallet(this.userId);
   }
 
+  /**
+   * Purchase credits through a credit pack.
+   * Creates Payment + CreditTransaction + updates wallet.
+   */
+  async purchaseCredits(packId: string, provider: string = "manual") {
+    this.ensureInitialized();
+    this.requirePermission("PURCHASE_CREDITS");
+
+    const pack = await db.creditPack.findFirst({
+      where: { id: packId, isActive: true },
+    });
+
+    if (!pack) {
+      throw new Error("Pack de crédits non trouvé ou inactif");
+    }
+
+    const idempotencyKey = `purchase-${this.userId}-${pack.id}-${Date.now()}`;
+
+    // Create Payment
+    const payment = await db.payment.create({
+      data: {
+        userId: this.userId,
+        amountFcfa: pack.price,
+        credits: pack.credits,
+        type: "credit_pack",
+        provider,
+        status: "completed",
+        packId: pack.id,
+        idempotencyKey,
+        metadata: JSON.stringify({ packName: pack.name, packPlan: pack.plan }),
+      },
+    });
+
+    // Add credits atomically
+    await db.$transaction([
+      db.userCredits.update({
+        where: { userId: this.userId },
+        data: {
+          credits: { increment: pack.credits },
+          songsRemaining: { increment: pack.songsLimit },
+          coversRemaining: { increment: pack.coversLimit },
+          videosRemaining: { increment: pack.videosLimit },
+          totalCreditsPurchased: { increment: pack.credits },
+        },
+      }),
+      db.creditTransaction.create({
+        data: {
+          userId: this.userId,
+          type: "credit",
+          category: "purchase",
+          amount: pack.credits,
+          description: `Achat pack ${pack.name}: ${pack.credits} crédits (${pack.price} FCFA)`,
+          packId: pack.id,
+          paymentId: payment.id,
+          idempotencyKey: `credit-${idempotencyKey}`,
+        },
+      }),
+    ]);
+
+    await EventBus.emit({
+      event: "CREDITS_PURCHASED",
+      entityType: "payment",
+      entityId: payment.id,
+      userId: this.userId,
+      data: { packId: pack.id, credits: pack.credits, priceFcfa: pack.price, provider },
+    });
+
+    return { payment, credits: pack.credits, priceFcfa: pack.price };
+  }
+
   // ============ GENERATION ============
 
-  /**
-   * Execute an AI generation through the full pipeline.
-   * This is THE way to generate anything on Melodia.
-   */
   async generate(genCtx: Omit<GenerationContext, "user">) {
     this.ensureInitialized();
     return AIOrchestrator.execute({
       ...genCtx,
       user: this.context,
     });
+  }
+
+  async getGenerationStatus(generationId: string) {
+    this.ensureInitialized();
+    const gen = await db.generation.findUnique({
+      where: { id: generationId },
+      include: { outputMedia: true },
+    });
+    if (!gen || (gen.userId !== this.userId && this.context.role !== "admin")) {
+      throw new Error("Génération non trouvée ou accès refusé");
+    }
+    return gen;
+  }
+
+  async cancelGeneration(generationId: string) {
+    this.ensureInitialized();
+    const gen = await db.generation.findUnique({ where: { id: generationId } });
+    if (!gen || gen.userId !== this.userId) {
+      throw new Error("Génération non trouvée ou accès refusé");
+    }
+    if (gen.status !== "pending" && gen.status !== "processing") {
+      throw new Error("Seules les générations en attente ou en cours peuvent être annulées");
+    }
+
+    const updated = await db.generation.update({
+      where: { id: generationId },
+      data: { status: "cancelled", completedAt: new Date() },
+    });
+
+    // Refund reserved credits
+    if (gen.creditsReserved > 0) {
+      await CreditEngine.refund(
+        this.userId,
+        gen.creditsReserved,
+        gen.id,
+        `refund-cancel-${gen.idempotencyKey}`
+      );
+    }
+
+    await EventBus.emit({
+      event: "GENERATION_CANCELLED",
+      entityType: "generation",
+      entityId: generationId,
+      userId: this.userId,
+    });
+
+    return updated;
   }
 
   // ============ PROJECTS ============
@@ -133,6 +241,55 @@ export class MelodiaCore {
     return ProjectService.listByUser(this.userId);
   }
 
+  async updateProject(projectId: string, data: { name?: string; description?: string; genre?: string; mood?: string; status?: string }) {
+    this.ensureInitialized();
+    this.requirePermission("UPDATE_PROJECT");
+
+    const project = await db.project.findUnique({ where: { id: projectId } });
+    if (!project || (project.userId !== this.userId && this.context.role !== "admin")) {
+      throw new Error("Projet non trouvé ou accès refusé");
+    }
+
+    const updated = await db.project.update({
+      where: { id: projectId },
+      data,
+    });
+
+    await EventBus.emit({
+      event: "PROJECT_UPDATED",
+      entityType: "project",
+      entityId: projectId,
+      userId: this.userId,
+      data: { fields: Object.keys(data) },
+    });
+
+    return updated;
+  }
+
+  async archiveProject(projectId: string) {
+    this.ensureInitialized();
+    this.requirePermission("DELETE_PROJECT");
+
+    const project = await db.project.findUnique({ where: { id: projectId } });
+    if (!project || (project.userId !== this.userId && this.context.role !== "admin")) {
+      throw new Error("Projet non trouvé ou accès refusé");
+    }
+
+    const updated = await db.project.update({
+      where: { id: projectId },
+      data: { status: "archived" },
+    });
+
+    await EventBus.emit({
+      event: "PROJECT_ARCHIVED",
+      entityType: "project",
+      entityId: projectId,
+      userId: this.userId,
+    });
+
+    return updated;
+  }
+
   // ============ MEDIA ============
 
   async createMedia(data: Parameters<typeof MediaService.create>[1]) {
@@ -143,6 +300,12 @@ export class MelodiaCore {
 
   async getProjectMedia(projectId: string, type?: string) {
     return MediaService.getByProject(projectId, type);
+  }
+
+  async deleteMedia(mediaId: string) {
+    this.ensureInitialized();
+    this.requirePermission("DELETE_MEDIA");
+    return MediaService.delete(mediaId, this.userId);
   }
 
   // ============ ARTIST ============
@@ -157,6 +320,12 @@ export class MelodiaCore {
     return ArtistService.getIdentity(artistId);
   }
 
+  async updateArtistIdentity(artistId: string, data: Parameters<typeof ArtistService.updateIdentity>[2]) {
+    this.ensureInitialized();
+    this.requirePermission("UPDATE_ARTIST_IDENTITY");
+    return ArtistService.updateIdentity(artistId, this.userId, data);
+  }
+
   // ============ NOTIFICATIONS ============
 
   async getNotifications(limit?: number) {
@@ -167,15 +336,88 @@ export class MelodiaCore {
     return NotificationService.getUnread(this.userId);
   }
 
+  async markNotificationRead(notificationId: string) {
+    return NotificationService.markRead(notificationId);
+  }
+
+  async markAllNotificationsRead() {
+    return NotificationService.markAllRead(this.userId);
+  }
+
+  // ============ SUBSCRIPTIONS ============
+
+  async changePlan(newPlan: string) {
+    this.ensureInitialized();
+    this.requirePermission("CHANGE_PLAN");
+
+    const PLAN_PRICES: Record<string, number> = {
+      basic: 2000, artist_starter: 5000, artist_production: 10000,
+      video_creator: 15000, artist_pro: 25000, label: 50000,
+    };
+
+    const PLAN_CREDITS: Record<string, { credits: number; songs: number; covers: number; videos: number }> = {
+      basic: { credits: 20, songs: 3, covers: 3, videos: 0 },
+      artist_starter: { credits: 50, songs: 8, covers: 8, videos: 0 },
+      artist_production: { credits: 100, songs: 15, covers: 15, videos: 0 },
+      video_creator: { credits: 150, songs: 20, covers: 20, videos: 3 },
+      artist_pro: { credits: 250, songs: 50, covers: 50, videos: 10 },
+      label: { credits: 500, songs: 999, covers: 999, videos: 30 },
+    };
+
+    if (!PLAN_PRICES[newPlan]) throw new Error("Plan invalide");
+    if (this.context.plan === newPlan) throw new Error("Vous êtes déjà sur ce plan");
+
+    const currentPlan = this.context.plan;
+    const isUpgrade = PLAN_PRICES[newPlan] > PLAN_PRICES[currentPlan];
+    const allocation = PLAN_CREDITS[newPlan];
+
+    await db.user.update({ where: { id: this.userId }, data: { plan: newPlan } });
+
+    await db.subscription.upsert({
+      where: { userId: this.userId },
+      update: {
+        plan: newPlan, status: "active", amountFcfa: PLAN_PRICES[newPlan],
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      create: {
+        userId: this.userId, plan: newPlan, status: "active",
+        amountFcfa: PLAN_PRICES[newPlan], interval: "month",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    const wallet = await db.userCredits.findUnique({ where: { userId: this.userId } });
+    if (wallet) {
+      await db.userCredits.update({
+        where: { userId: this.userId },
+        data: {
+          songsRemaining: isUpgrade ? allocation.songs : Math.min(wallet.songsRemaining, allocation.songs),
+          coversRemaining: isUpgrade ? allocation.covers : Math.min(wallet.coversRemaining, allocation.covers),
+          videosRemaining: isUpgrade ? allocation.videos : Math.min(wallet.videosRemaining, allocation.videos),
+        },
+      });
+    }
+
+    await EventBus.emit({
+      event: "PLAN_CHANGED",
+      entityType: "subscription",
+      entityId: this.userId,
+      userId: this.userId,
+      data: { fromPlan: currentPlan, toPlan: newPlan, isUpgrade, newPriceFcfa: PLAN_PRICES[newPlan] },
+    });
+
+    return { from: currentPlan, to: newPlan, isUpgrade, newPriceFcfa: PLAN_PRICES[newPlan] };
+  }
+
   // ============ CONTEXT ============
 
-  /** Get the full UserContext (for frontend hydration) */
   getContext(): UserContext {
     this.ensureInitialized();
     return this.context;
   }
 
-  /** Set active project/artist context */
   setActiveContext(projectId?: string, artistId?: string): void {
     this.ensureInitialized();
     this.context.activeProjectId = projectId || null;

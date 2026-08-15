@@ -217,3 +217,51 @@ Stage Summary:
 - API: 7 new Core routes (credits, subscriptions, media, notifications, generation status)
 - PLAN FIX: Unified plan names across signup, seed, and all Core modules
 - Build: PASSING — all 22 API routes compile
+
+---
+Task ID: step-4-5
+Agent: main
+Task: Execute Steps 4 (BACKEND) and 5 (FRONTEND) of MelodiaCore transformation
+
+Work Log:
+- Step 4 BACKEND:
+  * Deprecated /api/generate legacy route → now forwards to /api/core/generate
+  * Legacy route preserves backward compatibility but marks response with _deprecated flag
+  * Wired rate limiter to ALL API routes via middleware.ts
+  * Rate limits: /api/core/generate (5/min), credits/purchase (3/min), auth (10/min), signup (3/hour), media/upload (10/min), default API (100/min)
+  * Rate limit returns 429 with X-RateLimit headers and Retry-After
+  * Enriched MelodiaCore class with new methods:
+    - purchaseCredits(packId, provider) — full purchase pipeline through Core
+    - changePlan(newPlan) — plan change with upgrade/downgrade logic
+    - cancelGeneration(id) — cancel + refund reserved credits
+    - updateProject(id, data) — with permission + ownership
+    - archiveProject(id) — soft delete (status: "archived")
+    - deleteMedia(id) — with permission + ownership
+    - updateArtistIdentity(id, data) — with permission + ownership
+    - markNotificationRead(id), markAllNotificationsRead()
+    - getGenerationStatus(id) — with ownership check
+  * Created 8 Core CRUD API routes via subagent:
+    - /api/core/projects (GET/POST), /api/core/projects/[id] (GET/PATCH/DELETE)
+    - /api/core/artists (GET/POST), /api/core/artists/[id] (GET/PATCH)
+    - /api/core/media (GET), /api/core/media/[id] (GET/DELETE)
+    - /api/core/notifications (GET/PATCH), /api/core/notifications/[id] (PATCH)
+- Step 5 FRONTEND:
+  * Updated Header component: real notifications from /api/core/notifications/unread
+  * Replaced hardcoded "3" badge with live unread count (polling every 30s)
+  * Added notifications Popover with list, mark-as-read, mark-all-as-read
+  * Added time:timeAgo display for notification timestamps
+  * Plan name display: Translated plan keys to French labels (Basic, Starter, Production, etc.)
+  * Enriched MelodiaProvider:
+    - Added ActiveGeneration state tracking
+    - Added addGeneration/removeGeneration/updateGenerationProgress
+    - Auto-polling generation status every 2s while active
+    - Auto-refresh context after generation completes/fails
+    - Added useGenerations() hook
+  * All hooks: useMelodia(), usePermissions(), useCredits(), useGenerations()
+
+Stage Summary:
+- BACKEND: Legacy route deprecated, rate limiter wired, MelodiaCore fully enriched (10+ new methods)
+- API: 28 total routes (15 Core, 5 legacy, 8 admin/auth)
+- FRONTEND: Real notifications, generation progress tracking, plan display
+- Build: PASSING — all 28 API routes compile, all components render
+- Rate limiting: 6 route-specific limits + 1 default, 429 with proper headers

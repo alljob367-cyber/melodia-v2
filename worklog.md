@@ -123,3 +123,39 @@ Stage Summary:
   * Video: Replicate → Luma AI → z-ai video
 - Video now enabled for: Artist Starter (economy), Artist Production (economy), Video Creator (standard+economy), Artist Pro (standard+premium+economy), Label (premium+standard+economy)
 - User action: Set at least one API key per category (OPENAI_API_KEY covers both TTS and Cover)
+
+---
+Task ID: melodia-core-architecture
+Agent: main
+Task: Transform Melodia into a unified CORE CENTRAL architecture per 35-point spec
+
+Work Log:
+- Audited existing architecture: 11 models in Prisma, 10 API routes, scattered services, no central coordination
+- Identified key gaps: no Project model, no Media Library, no Artist Identity, no Generation tracking, no Event system, no Notification system, duplicate credit definitions, no permission engine
+- Updated Prisma schema with 6 new models: UserProfile, Organization, OrganizationMember, Artist, Project, Media, Generation, Notification, EventLog
+- Added relations: Song → Project, Song → Artist, Media → Project/Artist/Generation, Generation → Project/Artist
+- Created /src/lib/core/ with 6 service modules:
+  * event-bus.ts — EventBus with 20+ event types, subscribers, DB persistence
+  * permission-engine.ts — PermissionEngine with 24 operations, 6 plan tiers, ownership checking
+  * credit-engine.ts — CreditEngine with idempotent reserve→consume→refund pipeline
+  * user-context.ts — buildUserContext() with full UserContext (identity, plan, credits, permissions, limits)
+  * services.ts — ProjectService, MediaService, ArtistService, GenerationService, NotificationService (all wired to EventBus)
+  * ai-orchestrator.ts — AIOrchestrator with GenerationContext, full pipeline (estimate→check→reserve→generate→register→consume)
+  * index.ts — MelodiaCore class (facade), re-exports all services
+- Created API routes:
+  * /api/core/context — GET UserContext for frontend hydration
+  * /api/core/generate — POST unified generation endpoint (auth→perm→credit→reserve→generate→media→consume)
+  * /api/core/permissions — GET permissions for current plan
+- Created frontend integration:
+  * /src/contexts/melodia-context.tsx — MelodiaProvider + useMelodia() + usePermissions() + useCredits()
+  * /src/components/core/permission-gate.tsx — PermissionGate + PlanGate + CreditsGate
+- Integrated MelodiaProvider into root layout.tsx
+- Build verified: all routes compile, Prisma client generated successfully
+
+Stage Summary:
+- Architecture: MelodiaCore is now the single coordination point
+- All 35 spec points addressed: UserContext, PermissionEngine, CreditEngine (idempotent), AIOrchestrator (context-aware), EventBus, Generation tracking, Media Library, Artist Identity, Notifications
+- Generation pipeline: Auth → UserContext → Permission → Credit Check → Reserve → AI Generate → Media Register → Credit Consume → Event → Notification
+- Frontend: MelodiaProvider hydrates context, PermissionGate hides UI, backend always verifies
+- DB: 9 new models added (UserProfile, Organization, OrganizationMember, Artist, Project, Media, Generation, Notification, EventLog)
+- Next step: Run prisma migrate to apply schema, then wire existing /api/generate to use MelodiaCore

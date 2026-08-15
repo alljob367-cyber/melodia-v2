@@ -5,8 +5,15 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_DIRECT")
+  directUrl = env("DATABASE_URL")
 }
+
+// ============================================================
+// MELODIA CORE — Unified Platform Schema
+// ============================================================
+// Architecture: User → Identity → Plan → Credits → Projects → Media → AI → Outputs
+// All modules connect through MelodiaCore. No module bypasses the Core.
+// ============================================================
 
 // ============ USER & AUTH ============
 
@@ -17,18 +24,27 @@ model User {
   password      String?
   image         String?
   role          String    @default("user") // user, admin
-  plan          String    @default("basic") // basic, pro, studio
+  plan          String    @default("basic") // basic, artist_starter, artist_production, video_creator, artist_pro, label
+  locale        String    @default("fr")
   isActive      Boolean   @default(true)
   emailVerified Boolean   @default(false)
 
-  credits       UserCredits?
-  songs         Song[]
-  transactions  CreditTransaction[]
-  analytics     AnalyticsEvent[]
-  auditLogs     AuditLog[]
-  giftPages     GiftPage[]
-  accounts      Account[]
-  sessions      Session[]
+  // Core relations
+  credits         UserCredits?
+  profile         UserProfile?
+  organizationMemberships OrganizationMember[]
+  projects        Project[]
+  artists         Artist[]
+  media           Media[]
+  generations     Generation[]
+  notifications   Notification[]
+  songs           Song[]
+  transactions    CreditTransaction[]
+  analytics       AnalyticsEvent[]
+  auditLogs       AuditLog[]
+  giftPages       GiftPage[]
+  accounts        Account[]
+  sessions        Session[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -70,15 +86,117 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ============ USER PROFILE (Identity) ============
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  displayName     String?
+  bio             String?
+  country         String?   // CI, SN, CM, ML, etc.
+  city            String?
+  website         String?
+  socialLinks     String?   // JSON: { spotify, youtube, instagram, tiktok, twitter }
+  avatarUrl       String?
+  preferredStyles String?   // JSON: ["afrobeat", "amapiano"]
+  preferredLanguage String? @default("fr")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ ORGANIZATION (Label/Studio) ============
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  type        String   @default("label") // label, studio, collective
+  logoUrl     String?
+  website     String?
+  plan        String   @default("label")
+  isActive    Boolean  @default(true)
+
+  // Credits at org level
+  credits     Int      @default(0)
+  creditsUsed Int      @default(0)
+
+  members     OrganizationMember[]
+  projects    Project[]
+  artists     Artist[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String   @default("member") // owner, admin, member, viewer
+  permissions    String   // JSON: ["all"] or specific perms
+  invitedBy      String?
+  joinedAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+}
+
+// ============ ARTIST IDENTITY ============
+
+model Artist {
+  id          String   @id @default(cuid())
+  userId      String   // Creator/owner
+  organizationId String? // If belongs to label
+
+  name        String
+  slug        String   @unique
+  bio         String?
+  country     String?
+  genre       String?   // Primary genre
+  styles      String?   // JSON: ["afrobeat", "ndombolo"]
+  avatarUrl   String?
+  bannerUrl   String?
+
+  // Visual Identity — used by AI Orchestrator
+  visualStyle      String?  // JSON: { colors, mood, aesthetic, typography }
+  referenceImages  String?  // JSON: [{ id, url, label, type }] — reference photos
+  colorPalette     String?  // JSON: ["#FF6B35", "#1A1A2E", ...]
+  visualConcepts   String?  // JSON: [{ name, description, imageUrl }]
+
+  // Social
+  socialLinks  String?  // JSON: { spotify, youtube, instagram, tiktok }
+
+  // Stats
+  totalProjects Int    @default(0)
+  totalSongs    Int    @default(0)
+
+  projects    Project[]
+  media       Media[]
+  generations Generation[]
+  songs       Song[]
+
+  user         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ============ CREDITS SYSTEM ============
 
 model UserCredits {
   id              String   @id @default(cuid())
   userId          String   @unique
-  credits         Int      @default(20)    // Unified credit balance (1 credit = ~10 FCFA)
+  credits         Int      @default(20)    // Unified credit balance
+  creditsReserved Int      @default(0)     // Currently reserved for in-progress jobs
   songsRemaining  Int      @default(3)
   coversRemaining Int      @default(3)
-  videosRemaining Int      @default(0)     // Controlled separately (expensive)
+  videosRemaining Int      @default(0)
   totalSongsUsed  Int      @default(0)
   totalCoversUsed Int      @default(0)
   totalVideosUsed Int      @default(0)
@@ -92,31 +210,113 @@ model UserCredits {
 }
 
 model CreditTransaction {
-  id          String   @id @default(cuid())
-  userId      String
-  type        String   // debit, credit
-  category    String   // song, cover, voice, video, storage, bonus, purchase
-  amount      Int
-  description String?
-  packId      String?
+  id              String   @id @default(cuid())
+  userId          String
+  type            String   // debit, credit, reserve, refund
+  category        String   // song, cover, voice, video, storage, bonus, purchase
+  amount          Int
+  description     String?
+  packId          String?
+  generationId    String?  // Link to the generation that caused this transaction
+  idempotencyKey  String?  // Prevents double-charging
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@unique([idempotencyKey])
 }
 
 model CreditPack {
   id            String   @id @default(cuid())
   name          String
-  plan          String   // decouverte, production, artiste, video, professionnel, label
+  plan          String
   price         Int      // in FCFA
-  credits       Int      // Credit units included
+  credits       Int
   songsLimit    Int
   coversLimit   Int
   videosLimit   Int      @default(0)
-  features      String   // JSON string of features
+  features      String   // JSON
   isPopular     Boolean  @default(false)
   sortOrder     Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ PROJECTS ============
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String   // Owner
+  organizationId String?
+  artistId    String?  // Associated artist
+
+  name        String
+  slug        String?
+  description String?
+  type        String   @default("single") // single, ep, album, video_project, compilation
+  status      String   @default("active") // active, archived, completed
+  coverUrl    String?  // Project cover image
+
+  // Project metadata
+  genre       String?
+  mood        String?
+  language    String   @default("fr")
+
+  // Stats
+  totalMedia  Int      @default(0)
+  totalGenerations Int @default(0)
+
+  songs       Song[]
+  media       Media[]
+  generations Generation[]
+
+  user         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  artist       Artist?        @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ MEDIA LIBRARY ============
+
+model Media {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  artistId    String?
+  generationId String?  // If created by AI
+
+  // File info
+  name        String
+  type        String   // audio, image, video, document, lyrics
+  mimeType    String   // audio/wav, image/png, video/mp4, etc.
+  url         String   // Storage URL (Vercel Blob or local)
+  thumbnailUrl String? // For videos/images
+
+  // Metadata
+  fileSizeKb  Int?
+  duration    Int?     // For audio/video (seconds)
+  width       Int?     // For images/video
+  height      Int?     // For images/video
+  metadata    String?  // JSON: { bpm, key, bitrate, etc. }
+
+  // Status
+  status      String   @default("ready") // uploading, ready, processing, failed
+  isPublic    Boolean  @default(false)
+
+  // Tags & search
+  tags        String?  // JSON: ["afrobeat", "cover", "single"]
+
+  song        Song?    @relation(fields: [songId], references: [id], onDelete: SetNull)
+  songId      String?
+
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  artist       Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  generation   Generation? @relation(fields: [generationId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,17 +327,20 @@ model CreditPack {
 model Song {
   id            String    @id @default(cuid())
   userId        String
+  projectId     String?   // ✅ Now linked to Project
+  artistId      String?   // ✅ Now linked to Artist
+
   title         String
-  style         String    // Afrobeat, Amapiano, etc.
-  mood          String?   // Joyful, Melancholic, etc.
-  theme         String?   // Love, Freedom, etc.
+  style         String
+  mood          String?
+  theme         String?
   language      String    @default("fr")
 
   lyricsText    String?
   audioUrl      String?
   coverUrl      String?
   videoUrl      String?
-  duration      Int?      // seconds
+  duration      Int?
 
   status        String    @default("draft") // draft, generating, completed, failed
   isPublic      Boolean   @default(false)
@@ -147,8 +350,11 @@ model Song {
 
   lyrics        Lyrics?
   storyAnalysis StoryAnalysis?
+  media         Media[]
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  artist  Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -171,11 +377,78 @@ model StoryAnalysis {
   id          String @id @default(cuid())
   songId      String @unique
   summary     String
-  keywords    String // JSON array
+  keywords    String
   sentiment   String
-  themes      String // JSON array
+  themes      String
 
   song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ============ GENERATIONS (AI Jobs) ============
+
+model Generation {
+  id              String   @id @default(cuid())
+  userId          String
+  organizationId  String?
+  projectId       String?
+  artistId        String?
+
+  // What was generated
+  operation       String   // CREATE_LYRICS, CREATE_COMPOSITION, CREATE_COVER, CREATE_AUDIO, CREATE_VIDEO, CREATE_STORYBOARD
+  provider        String?  // openai, elevenlabs, mistral, replicate, luma, z-ai, stability
+  model           String?  // tts-1-hd, dall-e-3, voxtral-mini-tts-latest, etc.
+
+  // Input
+  inputPrompt     String?  // The prompt sent to AI
+  inputMediaIds   String?  // JSON: ["media_id_1", "media_id_2"]
+  inputParams     String?  // JSON: { style, mood, quality, duration, etc. }
+
+  // Output
+  outputMediaIds  String?  // JSON: ["media_id_1"] — created Media records
+
+  // Status
+  status          String   @default("pending") // pending, processing, completed, failed, cancelled
+  error           String?  // Error message if failed
+  progress        Int      @default(0) // 0-100
+
+  // Credits
+  estimatedCost   Int      @default(0)  // Estimated credits before generation
+  actualCost      Int      @default(0)  // Actual credits consumed
+  creditsReserved Int      @default(0)  // Credits held during processing
+  creditsConsumed Boolean  @default(false) // Prevents double-charging
+  idempotencyKey  String   @unique // Prevents duplicate generations
+
+  // Timing
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?     // Duration in ms
+
+  // Relations
+  outputMedia     Media[]
+
+  user           User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project        Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  artist         Artist?        @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // generation_complete, generation_failed, credits_low, credits_refunded, project_created, artist_created, plan_changed, media_ready
+  title       String
+  message     String?
+  data        String?  // JSON: { generationId, projectId, etc. }
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
@@ -191,9 +464,9 @@ model AIRequestLog {
   completionTokens Int?
   totalTokens     Int?
   cost        Float?
-  status      String   // success, error
+  status      String
   error       String?
-  duration    Int?     // ms
+  duration    Int?
 
   createdAt DateTime @default(now())
 }
@@ -204,7 +477,7 @@ model AuditLog {
   action    String
   entity    String
   entityId  String?
-  details   String?  // JSON
+  details   String?
 
   user User? @relation(fields: [userId], references: [id])
 
@@ -217,10 +490,24 @@ model AnalyticsEvent {
   id        String   @id @default(cuid())
   userId    String?
   event     String
-  data      String?  // JSON
+  data      String?
   page      String?
 
   user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============ EVENTS (Internal EventBus Log) ============
+
+model EventLog {
+  id          String   @id @default(cuid())
+  event       String   // AUDIO_GENERATED, COVER_GENERATED, VIDEO_GENERATED, etc.
+  entityType  String?  // generation, media, project, artist, credits
+  entityId    String?
+  userId      String?
+  data        String?  // JSON payload
+  processed   Boolean  @default(true)
 
   createdAt DateTime @default(now())
 }

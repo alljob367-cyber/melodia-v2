@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/auth-provider";
 import { MeloChat } from "@/components/melo/melo-chat";
+import { MelodiaProvider } from "@/contexts/melodia-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -50,9 +51,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
-            {/* Melo — Assistant IA flottant (disponible sur TOUTES les pages) */}
-            <MeloChat />
+            <MelodiaProvider>
+              {children}
+              {/* Melo — Assistant IA flottant (disponible sur TOUTES les pages) */}
+              <MeloChat />
+            </MelodiaProvider>
           </AuthProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>

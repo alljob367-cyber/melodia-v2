@@ -29,7 +29,7 @@ const uploadSchema = z.object({
   artistId: z.string().optional(),
   songId: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   isPublic: z.boolean().default(false),
 });
 

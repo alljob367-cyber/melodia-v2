@@ -94,6 +94,7 @@ export async function middleware(request: NextRequest) {
               remaining: 0,
               limit: config.max,
               windowMs: config.windowMs,
+              resetAt: new Date(rateResult.resetTime),
             },
           }).catch(() => {}); // Don't block on DB failure
         } catch {}

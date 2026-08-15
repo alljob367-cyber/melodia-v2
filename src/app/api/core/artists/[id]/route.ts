@@ -44,7 +44,7 @@ export async function GET(
  * Update an artist identity. Requires UPDATE_ARTIST_IDENTITY permission and ownership.
  */
 const updateArtistIdentitySchema = z.object({
-  visualStyle: z.record(z.unknown()).optional(),
+  visualStyle: z.record(z.string(), z.unknown()).optional(),
   referenceImages: z.array(
     z.object({
       id: z.string(),

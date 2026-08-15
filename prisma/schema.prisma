@@ -174,6 +174,9 @@ model Payment {
   // Credit Pack (if purchasing credits)
   packId          String?
 
+  // Idempotency
+  idempotencyKey  String?  @unique // Prevents duplicate payment processing
+
   // Metadata
   metadata        String?  // JSON: provider response, receipt URL, etc.
 
@@ -706,6 +709,8 @@ model RateLimitLog {
   userId      String?
   allowed     Boolean
   remaining   Int
+  limit       Int      // Max requests allowed in window
+  windowMs    Int      // Rate limit window in milliseconds
   resetAt     DateTime
 
   createdAt DateTime @default(now())

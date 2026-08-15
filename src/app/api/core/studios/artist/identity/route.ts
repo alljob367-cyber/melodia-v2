@@ -14,7 +14,7 @@ const artistIdentitySchema = z.object({
   action: z.enum(["update_identity", "ai_producer", "voice_studio", "analytics"]),
   artistId: z.string(),
   // Update identity fields
-  visualStyle: z.record(z.unknown()).optional(),
+  visualStyle: z.record(z.string(), z.unknown()).optional(),
   referenceImages: z.array(z.object({ id: z.string(), url: z.string(), label: z.string(), type: z.string() })).optional(),
   colorPalette: z.array(z.string()).optional(),
   visualConcepts: z.array(z.object({ name: z.string(), description: z.string(), imageUrl: z.string().optional() })).optional(),

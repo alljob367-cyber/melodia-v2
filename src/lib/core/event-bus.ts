@@ -46,7 +46,11 @@ export type CoreEvent =
   | "NOTIFICATION_SENT"
   // Export events
   | "EXPORT_COMPLETED"
-  | "EXPORT_FAILED";
+  | "EXPORT_FAILED"
+  // Media update events
+  | "MEDIA_UPDATED"
+  // Organization events
+  | "ORG_MEMBER_INVITED";
 
 export interface EventPayload {
   event: CoreEvent;

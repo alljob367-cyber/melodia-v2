@@ -53,7 +53,6 @@ export async function checkRateLimit(
   if (options.useRedis && process.env.REDIS_URL) {
     try {
       // Lazy import — keeps the dep optional
-      // @ts-expect-error ioredis is an optional dependency
       const mod = await import("ioredis");
       const Redis = mod.default;
       const client = new Redis(process.env.REDIS_URL, {

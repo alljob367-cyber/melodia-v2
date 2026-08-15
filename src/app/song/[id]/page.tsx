@@ -172,7 +172,7 @@ export default function SongResultPage() {
       {hasAudio && (
         <audio
           ref={audioRef}
-          src={song.audioUrl}
+          src={song.audioUrl ?? undefined}
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
           onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
           onEnded={() => setIsPlaying(false)}

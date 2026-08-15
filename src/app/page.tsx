@@ -74,7 +74,7 @@ import {
 // ===== ANIMATION VARIANTS =====
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
 };
 
 const stagger = {
@@ -216,7 +216,7 @@ function Header() {
           {/* Right */}
           <div className="flex items-center gap-3">
             {/* Mobile Menu Hamburger */}
-            <MobileMenu isLoggedIn={isLoggedIn} userName={session?.user?.name} />
+            <MobileMenu isLoggedIn={isLoggedIn} userName={session?.user?.name ?? undefined} />
             {/* Language Selector */}
             <div className="relative hidden sm:block">
               <button

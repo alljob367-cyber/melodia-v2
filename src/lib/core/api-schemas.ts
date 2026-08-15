@@ -92,7 +92,7 @@ export const CreateArtistSchema = z.object({
 });
 
 export const UpdateArtistIdentitySchema = z.object({
-  visualStyle: z.record(z.unknown()).optional(),
+  visualStyle: z.record(z.string(), z.unknown()).optional(),
   referenceImages: z.array(z.object({
     id: z.string(),
     url: z.string().url(),
@@ -129,14 +129,14 @@ export const UploadMediaSchema = z.object({
   artistId: z.string().optional(),
   songId: z.string().optional(),
   tags: z.array(z.string()).max(20).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   isPublic: z.boolean().default(false),
 });
 
 export const UpdateMediaSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   tags: z.array(z.string()).max(20).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ============ CREDITS ============
@@ -225,7 +225,7 @@ export const VideoStudioSchema = z.object({
 export const ArtistStudioSchema = z.object({
   action: z.enum(["update_identity", "ai_producer", "voice_studio", "analytics"]),
   artistId: z.string(),
-  visualStyle: z.record(z.unknown()).optional(),
+  visualStyle: z.record(z.string(), z.unknown()).optional(),
   referenceImages: z.array(z.object({
     id: z.string(), url: z.string().url(), label: z.string().max(100), type: z.string().max(50),
   })).optional(),

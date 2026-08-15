@@ -47,12 +47,13 @@ export interface PaymentVerification {
   amountFcfa?: number;
   paidAt?: Date;
   metadata?: Record<string, unknown>;
+  providerData?: Record<string, unknown>;
 }
 
 export interface WebhookResult {
   eventType: string;
   paymentId: string;         // Our internal payment ID
-  status: "completed" | "failed" | "refunded";
+  status: "completed" | "failed" | "refunded" | "pending";
   amountFcfa?: number;
   providerData?: Record<string, unknown>;
 }

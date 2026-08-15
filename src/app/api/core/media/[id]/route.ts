@@ -106,7 +106,7 @@ export async function DELETE(
 const mediaUpdateSchema = z.object({
   name: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

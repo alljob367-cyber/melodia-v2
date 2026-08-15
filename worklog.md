@@ -159,3 +159,61 @@ Stage Summary:
 - Frontend: MelodiaProvider hydrates context, PermissionGate hides UI, backend always verifies
 - DB: 9 new models added (UserProfile, Organization, OrganizationMember, Artist, Project, Media, Generation, Notification, EventLog)
 - Next step: Run prisma migrate to apply schema, then wire existing /api/generate to use MelodiaCore
+
+---
+Task ID: steps-1-2-3
+Agent: main
+Task: Execute Steps 1 (AUDIT), 2 (ARCHITECTURE), 3 (DATABASE) of MelodiaCore transformation
+
+Work Log:
+- Step 1 AUDIT: Comprehensive codebase analysis
+  * Explored full project structure: 18 Prisma models, 15 API routes, 12 lib services, 6 core modules
+  * Identified 12 key findings including dual credit systems, plan name inconsistency, unused deps
+  * Found 2 CRITICAL missing features (Payment, Credit Purchase), 3 HIGH (Real-time, Upload, Plan Change)
+  * Generated audit report script (scripts/audit-report.ts)
+  * Created architecture diagram (download/melodia-architecture-diagram.png)
+- Step 2 ARCHITECTURE: Designed unified MelodiaCore v2.0 architecture
+  * Created ARCHITECTURE.ts with full specification (14 sections)
+  * Defined Unified Action Pipeline: Auth → Context → Perm → Credit → Execute → Register → Consume → Emit → Notify
+  * Expanded MelodiaOperation from 23 to 25 operations (+PURCHASE_CREDITS, +CHANGE_PLAN)
+  * Added CoreEvent SUBSCRIPTION_CREATED, SUBSCRIPTION_CANCELLED
+  * Added EventBus auto-wiring for PLAN_CHANGED, PLAN_EXPIRED, CREDITS_PURCHASED
+- Step 3 DATABASE: Updated Prisma schema with new models and indexes
+  * Added Subscription model (plan, status, provider, providerId, timing, billing)
+  * Added Payment model (amountFcfa, credits, type, provider, status, packId)
+  * Added FileUpload model (upload pipeline with progress tracking)
+  * Added RateLimitLog model (for wired rate limiting)
+  * Added 30+ performance indexes across all models
+  * Added totalCreditsPurchased to UserCredits
+  * Added isActive to CreditPack
+  * Added paymentId to CreditTransaction (link purchases to payments)
+  * Added ipAddress, sessionId to audit/analytics
+  * Fixed migration_lock.toml (sqlite → postgresql)
+  * Generated Prisma client successfully
+- Fixed Plan Name Inconsistency:
+  * Updated signup route: plan "decouverte" → "basic"
+  * Updated seed.ts: All 6 plans now use unified English names (basic, artist_starter, artist_production, video_creator, artist_pro, label)
+  * Updated seed: Demo user plan "artiste" → "artist_production"
+  * Seed now creates Subscription records for admin and demo users
+- Created 7 New Core API Routes:
+  * POST /api/core/credits/purchase — Credit purchase pipeline (select pack → create payment → add credits → emit)
+  * GET /api/core/credits/wallet — Get credit wallet with effective balance
+  * GET /api/core/credits/history — Paginated credit transaction history
+  * POST /api/core/subscriptions/change — Plan change pipeline (upgrade/downgrade, credit allocation)
+  * GET /api/core/subscriptions/current — Current subscription details
+  * POST /api/core/media/upload — File upload registration through Core
+  * GET /api/core/notifications/unread — Unread notification count + list
+  * GET /api/core/generate-status/[id] — Generation status polling with ownership check
+- Updated Core Modules:
+  * PermissionEngine: Added PURCHASE_CREDITS + CHANGE_PLAN to all 6 plan tiers
+  * EventBus: Added SUBSCRIPTION_CREATED + SUBSCRIPTION_CANCELLED event types
+  * Services: Added EventBus wiring for CREDITS_PURCHASED, PLAN_CHANGED, PLAN_EXPIRED → NotificationService
+- Build verified: All routes compile successfully
+
+Stage Summary:
+- AUDIT: 12 findings, 2 critical gaps, architecture diagram created
+- ARCHITECTURE: 25 operations, 26 events, unified pipeline defined
+- DATABASE: 22 models total (4 new: Subscription, Payment, FileUpload, RateLimitLog), 30+ indexes
+- API: 7 new Core routes (credits, subscriptions, media, notifications, generation status)
+- PLAN FIX: Unified plan names across signup, seed, and all Core modules
+- Build: PASSING — all 22 API routes compile

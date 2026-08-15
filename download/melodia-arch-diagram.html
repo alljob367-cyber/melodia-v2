@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg-deep: #06080F;
+    --bg-base: #0B0F1A;
+    --bg-surface: #111827;
+    --bg-elevated: #1A2235;
+    --bg-card: #131A2C;
+    --neon-purple: #7C5CFC;
+    --neon-cyan: #00E5FF;
+    --neon-pink: #FF6B9D;
+    --neon-teal: #22D3EE;
+    --neon-amber: #FBBF24;
+    --neon-lime: #84CC16;
+    --neon-orange: #F97316;
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --text-dim: #475569;
+    --border-subtle: rgba(148,163,184,0.06);
+    --border-light: rgba(148,163,184,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-deep);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-primary);
+  }
+  #root {
+    width: 1800px;
+    padding: 50px 60px 50px;
+    position: relative;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% 14%, rgba(124,92,252,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 300px at 15% 50%, rgba(0,229,255,0.03) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 300px at 85% 50%, rgba(255,107,157,0.03) 0%, transparent 70%),
+      radial-gradient(ellipse 700px 400px at 50% 80%, rgba(34,211,238,0.03) 0%, transparent 70%),
+      var(--bg-deep);
+  }
+  .grid-dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(148,163,184,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+  #connections-svg {
+    position: absolute; top: 0; left: 0;
+    pointer-events: none; z-index: 1;
+  }
+  .content-layer { position: relative; z-index: 2; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 28px; }
+  .header-badge {
+    display: inline-block; padding: 5px 18px; border-radius: 100px;
+    background: rgba(124,92,252,0.1); border: 1px solid rgba(124,92,252,0.25);
+    color: var(--neon-purple); font-size: 11px; font-weight: 600;
+    letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .header h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .header h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header .subtitle { font-size: 14px; color: var(--text-secondary); max-width: 680px; margin: 0 auto; line-height: 1.6; }
+
+  /* Central Hub */
+  .hub-container { display: flex; justify-content: center; margin-bottom: 20px; }
+  .central-hub {
+    width: 360px; padding: 22px 26px;
+    background: linear-gradient(145deg, rgba(124,92,252,0.14), rgba(0,229,255,0.06));
+    border: 2px solid var(--neon-purple); border-radius: 20px;
+    text-align: center; position: relative;
+    box-shadow: 0 0 50px rgba(124,92,252,0.25), 0 0 100px rgba(124,92,252,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .central-hub::before {
+    content: ''; position: absolute; inset: -6px; border-radius: 26px;
+    border: 1px solid rgba(124,92,252,0.2); pointer-events: none;
+  }
+  .central-hub::after {
+    content: ''; position: absolute; inset: -12px; border-radius: 32px;
+    border: 1px solid rgba(124,92,252,0.08); pointer-events: none;
+  }
+  .hub-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--neon-purple), #5B3FD4);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px; font-size: 24px;
+    box-shadow: 0 4px 24px rgba(124,92,252,0.3);
+  }
+  .hub-title { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+  .hub-sub { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--neon-cyan); margin: 4px 0 8px; }
+  .hub-desc { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .hub-rule {
+    margin-top: 10px; padding: 6px 14px;
+    background: rgba(124,92,252,0.08); border: 1px solid rgba(124,92,252,0.18); border-radius: 8px;
+    font-size: 10.5px; font-weight: 700; color: var(--neon-purple); letter-spacing: 0.5px;
+  }
+
+  /* Flow indicator */
+  .flow-indicator {
+    text-align: center; margin: 8px 0 18px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    color: var(--text-dim); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+  }
+  .flow-line { width: 140px; height: 1px; background: linear-gradient(90deg, transparent, rgba(124,92,252,0.3), transparent); }
+
+  /* Layer card */
+  .layer {
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: 14px; position: relative; overflow: hidden;
+  }
+  .layer::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .layer.l1::before { background: linear-gradient(90deg, var(--neon-purple), rgba(124,92,252,0.2)); }
+  .layer.l2::before { background: linear-gradient(90deg, var(--neon-cyan), rgba(0,229,255,0.2)); }
+  .layer.l3::before { background: linear-gradient(90deg, var(--neon-teal), rgba(34,211,238,0.2)); }
+  .layer.l4::before { background: linear-gradient(90deg, var(--neon-amber), rgba(251,191,36,0.2)); }
+  .layer.l5::before { background: linear-gradient(90deg, var(--neon-pink), rgba(255,107,157,0.2)); }
+  .layer.l6::before { background: linear-gradient(90deg, var(--neon-lime), rgba(132,204,22,0.2)); }
+
+  .layer-head {
+    padding: 13px 18px 9px; display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .layer-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  }
+  .l1 .layer-num { background: rgba(124,92,252,0.12); color: var(--neon-purple); }
+  .l2 .layer-num { background: rgba(0,229,255,0.1); color: var(--neon-cyan); }
+  .l3 .layer-num { background: rgba(34,211,238,0.1); color: var(--neon-teal); }
+  .l4 .layer-num { background: rgba(251,191,36,0.1); color: var(--neon-amber); }
+  .l5 .layer-num { background: rgba(255,107,157,0.1); color: var(--neon-pink); }
+  .l6 .layer-num { background: rgba(132,204,22,0.1); color: var(--neon-lime); }
+  .layer-title { font-size: 15px; font-weight: 700; }
+  .layer-tag {
+    margin-left: auto; font-size: 9.5px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px;
+  }
+  .l1 .layer-tag { background: rgba(124,92,252,0.08); color: var(--neon-purple); }
+  .l2 .layer-tag { background: rgba(0,229,255,0.06); color: var(--neon-cyan); }
+  .l3 .layer-tag { background: rgba(34,211,238,0.06); color: var(--neon-teal); }
+  .l4 .layer-tag { background: rgba(251,191,36,0.06); color: var(--neon-amber); }
+  .l5 .layer-tag { background: rgba(255,107,157,0.06); color: var(--neon-pink); }
+  .l6 .layer-tag { background: rgba(132,204,22,0.06); color: var(--neon-lime); }
+  .layer-body { padding: 12px 18px 14px; }
+
+  /* Component */
+  .comp {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: var(--bg-elevated);
+    border: 1px solid var(--border-light); border-radius: 9px;
+  }
+  .comp-icon {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .l1 .comp-icon { background: rgba(124,92,252,0.1); }
+  .l2 .comp-icon { background: rgba(0,229,255,0.08); }
+  .l3 .comp-icon { background: rgba(34,211,238,0.08); }
+  .l4 .comp-icon { background: rgba(251,191,36,0.08); }
+  .l5 .comp-icon { background: rgba(255,107,157,0.08); }
+  .l6 .comp-icon { background: rgba(132,204,22,0.08); }
+  .comp-name { font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+  .comp-desc { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+
+  .pill {
+    padding: 3px 9px; border-radius: 5px;
+    font-size: 10.5px; font-weight: 500; font-family: 'JetBrains Mono', monospace;
+  }
+  .api-route {
+    padding: 6px 10px; border-radius: 7px; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    background: rgba(255,107,157,0.04); border: 1px solid rgba(255,107,157,0.1); color: var(--neon-pink);
+  }
+  .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .row-full { margin-bottom: 16px; }
+  .pipeline { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+  .pipe-step { padding: 4px 9px; border-radius: 5px; font-size: 10.5px; font-weight: 500; }
+  .pipe-arrow { color: var(--text-dim); font-size: 11px; }
+  .sflow { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .sflow .arr { color: var(--neon-cyan); }
+
+  /* Cross-cutting */
+  .crosscut {
+    background: var(--bg-card); border: 1px solid rgba(249,115,22,0.12);
+    border-radius: 14px; position: relative; overflow: hidden; margin-top: 20px;
+  }
+  .crosscut::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--neon-orange), rgba(249,115,22,0.15)); }
+  .cc-head { padding: 13px 18px 9px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-subtle); }
+  .cc-num { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; background: rgba(249,115,22,0.1); color: var(--neon-orange); }
+  .cc-title { font-size: 15px; font-weight: 700; }
+  .cc-tag { margin-left: auto; font-size: 9.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; background: rgba(249,115,22,0.08); color: var(--neon-orange); }
+  .cc-body { padding: 12px 18px 16px; display: flex; gap: 12px; }
+  .cc-item { flex: 1; padding: 12px 14px; background: var(--bg-elevated); border: 1px solid rgba(249,115,22,0.08); border-radius: 10px; }
+  .cc-icon { width: 30px; height: 30px; border-radius: 7px; background: rgba(249,115,22,0.08); display: flex; align-items: center; justify-content: center; font-size: 14px; margin-bottom: 6px; }
+  .cc-name { font-size: 12.5px; font-weight: 600; margin-bottom: 3px; }
+  .cc-desc { font-size: 10.5px; color: var(--text-muted); line-height: 1.4; }
+
+  .footer { margin-top: 24px; text-align: center; padding: 14px; border-top: 1px solid var(--border-subtle); }
+  .footer p { font-size: 10.5px; color: var(--text-dim); letter-spacing: 0.5px; }
+  .footer .hl { color: var(--neon-purple); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="grid-dots"></div>
+  <svg id="connections-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="content-layer">
+    <!-- HEADER -->
+    <div class="header" id="header">
+      <div class="header-badge">Platform Architecture</div>
+      <h1>Melodia <em>Central Hub</em> Architecture</h1>
+      <p class="subtitle">Every module flows through MelodiaCore — the single coordination layer that enforces permissions, manages credits, and orchestrates all AI generation.</p>
+    </div>
+
+    <!-- CENTRAL HUB -->
+    <div class="hub-container">
+      <div class="central-hub" id="hub">
+        <div class="hub-icon">&#9835;</div>
+        <div class="hub-title">MelodiaCore</div>
+        <div class="hub-sub">Central Coordinator</div>
+        <div class="hub-desc">The single gateway through which every operation passes. No module bypasses Core.</div>
+        <div class="hub-rule">&#9670; ALL ARROWS POINT THROUGH CORE &#9670;</div>
+      </div>
+    </div>
+
+    <!-- FLOW INDICATOR -->
+    <div class="flow-indicator">
+      <div class="flow-line"></div>
+      <span>Dependency Flow &mdash; All Layers Depend on Core</span>
+      <div class="flow-line"></div>
+    </div>
+
+    <!-- LAYER 1 + LAYER 2 -->
+    <div class="row-2col">
+      <div class="layer l1" id="layer1">
+        <div class="layer-head">
+          <div class="layer-num">L1</div>
+          <div class="layer-title">Context &amp; Identity</div>
+          <div class="layer-tag">Foundation</div>
+        </div>
+        <div class="layer-body">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="comp"><div class="comp-icon">&#128100;</div><div><div class="comp-name">UserContext</div><div class="comp-desc">Attached to every action &amp; request</div></div></div>
+            <div class="comp"><div class="comp-icon">&#128274;</div><div><div class="comp-name">PermissionEngine</div><div class="comp-desc">checkPermission() before every operation</div></div></div>
+            <div class="comp"><div class="comp-icon">&#9670;</div><div><div class="comp-name">CreditEngine</div><div class="comp-desc">reserve &#8594; consume &#8594; refund pipeline</div></div></div>
+          </div>
+          <div class="pipeline" style="margin-top:8px">
+            <div class="pipe-step" style="background:rgba(124,92,252,0.08);border:1px solid rgba(124,92,252,0.18);color:var(--neon-purple)">reserve()</div>
+            <div class="pipe-arrow">&#8594;</div>
+            <div class="pipe-step" style="background:rgba(124,92,252,0.08);border:1px solid rgba(124,92,252,0.18);color:var(--neon-purple)">consume()</div>
+            <div class="pipe-arrow">&#8594;</div>
+            <div class="pipe-step" style="background:rgba(124,92,252,0.08);border:1px solid rgba(124,92,252,0.18);color:var(--neon-purple)">refund()</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="layer l2" id="layer2">
+        <div class="layer-head">
+          <div class="layer-num">L2</div>
+          <div class="layer-title">AI Orchestrator</div>
+          <div class="layer-tag">Intelligence</div>
+        </div>
+        <div class="layer-body">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="comp"><div class="comp-icon">&#127919;</div><div><div class="comp-name">GenerationContext</div><div class="comp-desc">Configures generation params &amp; options</div></div></div>
+            <div class="comp"><div class="comp-icon">&#9881;</div><div><div class="comp-name">AIOrchestrator</div><div class="comp-desc">Routes to optimal AI provider</div></div></div>
+          </div>
+          <div class="sflow" style="margin-top:8px">
+            <span>GenerationContext</span><span class="arr">&#8594;</span><span>AIOrchestrator</span><span class="arr">&#8594;</span><span style="color:var(--neon-cyan)">Multi-Provider AI</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">OpenAI</div>
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">ElevenLabs</div>
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">Mistral</div>
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">Stability AI</div>
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">Replicate</div>
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">Luma</div>
+            <div class="pill" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.12);color:var(--neon-cyan)">z-ai CLI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYER 3 + LAYER 4 -->
+    <div class="row-2col">
+      <div class="layer l3" id="layer3">
+        <div class="layer-head">
+          <div class="layer-num">L3</div>
+          <div class="layer-title">Services</div>
+          <div class="layer-tag">Single Source of Truth</div>
+        </div>
+        <div class="layer-body">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="comp"><div class="comp-icon">&#128193;</div><div><div class="comp-name">ProjectService</div><div class="comp-desc">&#8594; Projects</div></div></div>
+            <div class="comp"><div class="comp-icon">&#127916;</div><div><div class="comp-name">MediaService</div><div class="comp-desc">&#8594; Media Library</div></div></div>
+            <div class="comp"><div class="comp-icon">&#127908;</div><div><div class="comp-name">ArtistService</div><div class="comp-desc">&#8594; Artist Identity</div></div></div>
+            <div class="comp"><div class="comp-icon">&#9889;</div><div><div class="comp-name">GenerationService</div><div class="comp-desc">&#8594; Generation Jobs</div></div></div>
+            <div class="comp"><div class="comp-icon">&#128276;</div><div><div class="comp-name">NotificationService</div><div class="comp-desc">&#8594; Notifications</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="layer l4" id="layer4">
+        <div class="layer-head">
+          <div class="layer-num">L4</div>
+          <div class="layer-title">Infrastructure</div>
+          <div class="layer-tag">Runtime</div>
+        </div>
+        <div class="layer-body">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="comp"><div class="comp-icon">&#128225;</div><div><div class="comp-name">EventBus</div><div class="comp-desc">Pub/sub + event log</div></div></div>
+            <div class="comp"><div class="comp-icon">&#128451;</div><div><div class="comp-name">Prisma DB</div><div class="comp-desc">PostgreSQL / Neon serverless</div></div></div>
+            <div class="comp"><div class="comp-icon">&#128194;</div><div><div class="comp-name">Vercel Blob</div><div class="comp-desc">File &amp; media storage</div></div></div>
+            <div class="comp"><div class="comp-icon">&#128336;</div><div><div class="comp-name">Rate Limiter</div><div class="comp-desc">Request throttling &amp; quotas</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYER 5: API Routes -->
+    <div class="row-full">
+      <div class="layer l5" id="layer5">
+        <div class="layer-head">
+          <div class="layer-num">L5</div>
+          <div class="layer-title">API Routes</div>
+          <div class="layer-tag">All Through Core</div>
+        </div>
+        <div class="layer-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+            <div class="api-route">/api/core/generate</div>
+            <div class="api-route">/api/core/context</div>
+            <div class="api-route">/api/core/permissions</div>
+            <div class="api-route">/api/core/credits/*</div>
+            <div class="api-route">/api/core/projects/*</div>
+            <div class="api-route">/api/core/media/*</div>
+            <div class="api-route">/api/core/artists/*</div>
+            <div class="api-route">/api/core/notifications/*</div>
+          </div>
+          <div class="sflow" style="margin-top:8px;justify-content:center">
+            <span style="color:var(--text-muted)">Every route</span><span class="arr" style="color:var(--neon-pink)">&#8594;</span><span style="color:var(--neon-pink);font-weight:600">MelodiaCore</span><span class="arr" style="color:var(--neon-pink)">&#8594;</span><span style="color:var(--text-muted)">Service Layer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYER 6: Frontend -->
+    <div class="row-full">
+      <div class="layer l6" id="layer6">
+        <div class="layer-head">
+          <div class="layer-num">L6</div>
+          <div class="layer-title">Frontend</div>
+          <div class="layer-tag">React Client</div>
+        </div>
+        <div class="layer-body">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div class="comp" style="flex:1;min-width:150px"><div class="comp-icon">&#127760;</div><div><div class="comp-name">MelodiaProvider</div><div class="comp-desc">React Context root</div></div></div>
+            <div class="comp" style="flex:1;min-width:150px"><div class="comp-icon">&#128736;</div><div><div class="comp-name">PermissionGate</div><div class="comp-desc">Conditional rendering</div></div></div>
+            <div class="comp" style="flex:1;min-width:150px"><div class="comp-icon">&#128179;</div><div><div class="comp-name">PlanGate</div><div class="comp-desc">Plan-based access control</div></div></div>
+            <div class="comp" style="flex:1;min-width:150px"><div class="comp-icon">&#9670;</div><div><div class="comp-name">CreditsGate</div><div class="comp-desc">Credit balance gate</div></div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+            <div class="pill" style="background:rgba(132,204,22,0.05);border:1px solid rgba(132,204,22,0.12);color:var(--neon-lime)">useMelodia()</div>
+            <div class="pill" style="background:rgba(132,204,22,0.05);border:1px solid rgba(132,204,22,0.12);color:var(--neon-lime)">usePermissions()</div>
+            <div class="pill" style="background:rgba(132,204,22,0.05);border:1px solid rgba(132,204,22,0.12);color:var(--neon-lime)">useCredits()</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CROSS-CUTTING CONCERNS -->
+    <div class="crosscut" id="crosscut">
+      <div class="cc-head">
+        <div class="cc-num">CC</div>
+        <div class="cc-title">Cross-Cutting Concerns</div>
+        <div class="cc-tag">Spans All Layers</div>
+      </div>
+      <div class="cc-body">
+        <div class="cc-item"><div class="cc-icon">&#128737;</div><div class="cc-name">Security</div><div class="cc-desc">Auth + Rate Limit + Ownership validation across all operations</div></div>
+        <div class="cc-item"><div class="cc-icon">&#128220;</div><div class="cc-name">Audit Trail</div><div class="cc-desc">EventLog + AuditLog for complete operation traceability</div></div>
+        <div class="cc-item"><div class="cc-icon">&#128200;</div><div class="cc-name">Analytics</div><div class="cc-desc">AnalyticsEvent tracking across all user interactions</div></div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <p>Melodia Platform Architecture &mdash; <span class="hl">MelodiaCore</span> is THE central coordinator. No module bypasses it.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Draw SVG connection lines from each layer to the hub
+function drawConnections() {
+  const svg = document.getElementById('connections-svg');
+  const root = document.getElementById('root');
+  const hub = document.getElementById('hub');
+
+  const rootRect = root.getBoundingClientRect();
+  const hubRect = hub.getBoundingClientRect();
+
+  // Hub bottom center (relative to root)
+  const hubCx = hubRect.left + hubRect.width / 2 - rootRect.left;
+  const hubBottom = hubRect.bottom - rootRect.top;
+
+  // Set SVG size
+  svg.setAttribute('width', rootRect.width);
+  svg.setAttribute('height', rootRect.height);
+
+  const layers = [
+    { id: 'layer1', color: '#7C5CFC', opacity: 0.45 },
+    { id: 'layer2', color: '#00E5FF', opacity: 0.45 },
+    { id: 'layer3', color: '#22D3EE', opacity: 0.35 },
+    { id: 'layer4', color: '#FBBF24', opacity: 0.35 },
+    { id: 'layer5', color: '#FF6B9D', opacity: 0.30 },
+    { id: 'layer6', color: '#84CC16', opacity: 0.30 },
+    { id: 'crosscut', color: '#F97316', opacity: 0.25 },
+  ];
+
+  layers.forEach(l => {
+    const el = document.getElementById(l.id);
+    if (!el) return;
+    const elRect = el.getBoundingClientRect();
+    const elCx = elRect.left + elRect.width / 2 - rootRect.left;
+    const elTop = elRect.top - rootRect.top;
+
+    // Create curved path from hub bottom to layer top
+    const midY = (hubBottom + elTop) / 2;
+    const d = `M ${hubCx} ${hubBottom} C ${hubCx} ${midY}, ${elCx} ${midY}, ${elCx} ${elTop}`;
+
+    // Glow path (wider, more transparent)
+    const glowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    glowPath.setAttribute('d', d);
+    glowPath.setAttribute('stroke', l.color);
+    glowPath.setAttribute('stroke-width', '4');
+    glowPath.setAttribute('fill', 'none');
+    glowPath.setAttribute('opacity', l.opacity * 0.3);
+    glowPath.setAttribute('filter', 'url(#glow)');
+    svg.appendChild(glowPath);
+
+    // Main path
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', l.color);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', l.opacity);
+    svg.appendChild(path);
+
+    // Arrow at the end (layer top)
+    const arrowSize = 6;
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    arrow.setAttribute('points', `${elCx},${elTop} ${elCx - arrowSize},${elTop - arrowSize * 1.5} ${elCx + arrowSize},${elTop - arrowSize * 1.5}`);
+    arrow.setAttribute('fill', l.color);
+    arrow.setAttribute('opacity', l.opacity + 0.1);
+    svg.appendChild(arrow);
+  });
+
+  // Draw inter-layer connections (horizontal dashed between pairs)
+  const pairs = [['layer1', 'layer2', 'rgba(148,163,184,0.12)'], ['layer3', 'layer4', 'rgba(148,163,184,0.12)']];
+  pairs.forEach(([id1, id2, col]) => {
+    const el1 = document.getElementById(id1);
+    const el2 = document.getElementById(id2);
+    if (!el1 || !el2) return;
+    const r1 = el1.getBoundingClientRect();
+    const r2 = el2.getBoundingClientRect();
+    const y = (r1.top + r1.bottom) / 2 - rootRect.top;
+    const x1 = r1.right - rootRect.left;
+    const x2 = r2.left - rootRect.left;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y);
+    line.setAttribute('stroke', col);
+    line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke-dasharray', '4,4');
+    svg.appendChild(line);
+  });
+}
+
+// Wait for layout then draw
+window.addEventListener('load', () => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(drawConnections);
+  });
+});
+</script>
+</body>
+</html>

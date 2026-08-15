@@ -503,3 +503,36 @@ EventBus.on("CREDITS_LOW", async (payload) => {
     });
   }
 });
+
+EventBus.on("CREDITS_PURCHASED", async (payload) => {
+  if (payload.userId) {
+    await NotificationService.send(payload.userId, {
+      type: "credits_purchased",
+      title: "Crédits achetés",
+      message: `${payload.data?.credits || 0} crédits ajoutés à votre compte.`,
+      data: payload.data as Record<string, unknown>,
+    });
+  }
+});
+
+EventBus.on("PLAN_CHANGED", async (payload) => {
+  if (payload.userId) {
+    const isUpgrade = payload.data?.isUpgrade;
+    await NotificationService.send(payload.userId, {
+      type: "subscription_changed",
+      title: isUpgrade ? "Plan amélioré" : "Plan modifié",
+      message: `Votre plan est maintenant ${payload.data?.toPlan || "actif"}.`,
+      data: payload.data as Record<string, unknown>,
+    });
+  }
+});
+
+EventBus.on("PLAN_EXPIRED", async (payload) => {
+  if (payload.userId) {
+    await NotificationService.send(payload.userId, {
+      type: "subscription_expired",
+      title: "Plan expiré",
+      message: "Votre plan a expiré. Certaines fonctionnalités peuvent être limitées. Renouvelez votre abonnement.",
+    });
+  }
+});

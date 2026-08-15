@@ -9,10 +9,10 @@ datasource db {
 }
 
 // ============================================================
-// MELODIA CORE — Unified Platform Schema
+// MELODIA CORE — Unified Platform Schema v2.0
 // ============================================================
-// Architecture: User → Identity → Plan → Credits → Projects → Media → AI → Outputs
-// All modules connect through MelodiaCore. No module bypasses the Core.
+// Architecture: User → Identity → Plan → Subscription → Credits → Projects → Media → AI → Outputs
+// ALL modules connect through MelodiaCore. No module bypasses the Core.
 // ============================================================
 
 // ============ USER & AUTH ============
@@ -45,9 +45,15 @@ model User {
   giftPages       GiftPage[]
   accounts        Account[]
   sessions        Session[]
+  subscription    Subscription?
+  payments        Payment[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([plan])
+  @@index([role])
+  @@index([isActive])
 }
 
 model Account {
@@ -107,6 +113,81 @@ model UserProfile {
   updatedAt DateTime @updatedAt
 }
 
+// ============ SUBSCRIPTION & BILLING ============
+
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+
+  // Plan info
+  plan            String   @default("basic") // basic, artist_starter, artist_production, video_creator, artist_pro, label
+  status          String   @default("active") // active, expired, trial, cancelled, past_due
+
+  // Payment provider
+  provider        String?  // stripe, wave, fpay, orange_money
+  providerId      String?  // External subscription ID from provider
+  providerCustomerId String? // External customer ID
+
+  // Timing
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  trialEnd           DateTime?
+  cancelledAt        DateTime?
+  expiresAt          DateTime?
+
+  // Billing
+  amountFcfa      Int      @default(0)  // Price in FCFA
+  interval        String   @default("month") // month, year
+
+  // Metadata
+  metadata        String?  // JSON: provider-specific data
+
+  payments   Payment[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([provider, providerId])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  subscriptionId  String?
+
+  // Payment details
+  amountFcfa      Int      // Amount in FCFA
+  credits         Int      // Credits purchased (0 for subscription payments)
+  type            String   // subscription, credit_pack, one_time
+
+  // Provider
+  provider        String   // stripe, wave, fpay, orange_money, manual
+  providerId      String?  // External payment ID
+  providerCustomerId String?
+
+  // Status
+  status          String   @default("pending") // pending, processing, completed, failed, refunded
+
+  // Credit Pack (if purchasing credits)
+  packId          String?
+
+  // Metadata
+  metadata        String?  // JSON: provider response, receipt URL, etc.
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider, providerId])
+}
+
 // ============ ORGANIZATION (Label/Studio) ============
 
 model Organization {
@@ -129,6 +210,9 @@ model Organization {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([isActive])
 }
 
 model OrganizationMember {
@@ -185,6 +269,9 @@ model Artist {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
 }
 
 // ============ CREDITS SYSTEM ============
@@ -201,6 +288,7 @@ model UserCredits {
   totalCoversUsed Int      @default(0)
   totalVideosUsed Int      @default(0)
   totalCreditsUsed Int     @default(0)
+  totalCreditsPurchased Int @default(0)  // Total credits ever purchased
   storageUsedMb   Float    @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -212,11 +300,12 @@ model UserCredits {
 model CreditTransaction {
   id              String   @id @default(cuid())
   userId          String
-  type            String   // debit, credit, reserve, refund
-  category        String   // song, cover, voice, video, storage, bonus, purchase
+  type            String   // debit, credit, reserve, refund, purchase
+  category        String   // song, cover, voice, video, storage, bonus, purchase, subscription
   amount          Int
   description     String?
   packId          String?
+  paymentId       String?  // Link to Payment if from a purchase
   generationId    String?  // Link to the generation that caused this transaction
   idempotencyKey  String?  // Prevents double-charging
 
@@ -225,6 +314,8 @@ model CreditTransaction {
   createdAt DateTime @default(now())
 
   @@unique([idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([category])
 }
 
 model CreditPack {
@@ -238,10 +329,14 @@ model CreditPack {
   videosLimit   Int      @default(0)
   features      String   // JSON
   isPopular     Boolean  @default(false)
+  isActive      Boolean  @default(true)
   sortOrder     Int      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([plan])
+  @@index([isActive])
 }
 
 // ============ PROJECTS ============
@@ -278,6 +373,9 @@ model Project {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([artistId])
 }
 
 // ============ MEDIA LIBRARY ============
@@ -320,6 +418,12 @@ model Media {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, type])
+  @@index([projectId, type])
+  @@index([artistId])
+  @@index([generationId])
+  @@index([status])
 }
 
 // ============ SONGS & CONTENT ============
@@ -327,8 +431,8 @@ model Media {
 model Song {
   id            String    @id @default(cuid())
   userId        String
-  projectId     String?   // ✅ Now linked to Project
-  artistId      String?   // ✅ Now linked to Artist
+  projectId     String?
+  artistId      String?
 
   title         String
   style         String
@@ -358,6 +462,10 @@ model Song {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([projectId])
+  @@index([artistId])
 }
 
 model Lyrics {
@@ -396,7 +504,7 @@ model Generation {
   artistId        String?
 
   // What was generated
-  operation       String   // CREATE_LYRICS, CREATE_COMPOSITION, CREATE_COVER, CREATE_AUDIO, CREATE_VIDEO, CREATE_STORYBOARD
+  operation       String   // generate_lyrics, generate_composition, generate_cover, generate_audio, generate_video_*, full_song
   provider        String?  // openai, elevenlabs, mistral, replicate, luma, z-ai, stability
   model           String?  // tts-1-hd, dall-e-3, voxtral-mini-tts-latest, etc.
 
@@ -434,6 +542,12 @@ model Generation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([projectId])
+  @@index([artistId])
+  @@index([operation])
+  @@index([status])
 }
 
 // ============ NOTIFICATIONS ============
@@ -441,7 +555,7 @@ model Generation {
 model Notification {
   id          String   @id @default(cuid())
   userId      String
-  type        String   // generation_complete, generation_failed, credits_low, credits_refunded, project_created, artist_created, plan_changed, media_ready
+  type        String   // generation_complete, generation_failed, credits_low, credits_refunded, project_created, artist_created, plan_changed, media_ready, subscription_changed
   title       String
   message     String?
   data        String?  // JSON: { generationId, projectId, etc. }
@@ -451,6 +565,9 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 // ============ AI & AUDIT ============
@@ -469,6 +586,10 @@ model AIRequestLog {
   duration    Int?
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([endpoint])
+  @@index([createdAt])
 }
 
 model AuditLog {
@@ -478,10 +599,15 @@ model AuditLog {
   entity    String
   entityId  String?
   details   String?
+  ipAddress String?
 
   user User? @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
 
 // ============ ANALYTICS ============
@@ -492,24 +618,66 @@ model AnalyticsEvent {
   event     String
   data      String?
   page      String?
+  sessionId String?
 
   user User? @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
 }
 
 // ============ EVENTS (Internal EventBus Log) ============
 
 model EventLog {
   id          String   @id @default(cuid())
-  event       String   // AUDIO_GENERATED, COVER_GENERATED, VIDEO_GENERATED, etc.
-  entityType  String?  // generation, media, project, artist, credits
+  event       String   // GENERATION_STARTED, GENERATION_COMPLETED, CREDITS_RESERVED, etc.
+  entityType  String?  // generation, media, project, artist, credits, subscription
   entityId    String?
   userId      String?
   data        String?  // JSON payload
   processed   Boolean  @default(true)
 
   createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============ FILE UPLOADS ============
+
+model FileUpload {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  artistId    String?
+
+  // File info
+  originalName String
+  mimeType    String
+  fileSizeKb  Int
+  url         String   // Vercel Blob URL after upload
+  thumbnailUrl String?
+
+  // Upload state
+  status      String   @default("pending") // pending, uploading, processing, completed, failed
+  progress    Int      @default(0) // 0-100
+
+  // Result
+  mediaId     String?  // Created Media record after processing
+
+  // Metadata
+  metadata    String?  // JSON: { width, height, duration, etc. }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([projectId])
 }
 
 // ============ GIFT / SHARE ============
@@ -527,4 +695,21 @@ model GiftPage {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============ RATE LIMIT LOG ============
+
+model RateLimitLog {
+  id          String   @id @default(cuid())
+  ipAddress   String
+  endpoint    String
+  userId      String?
+  allowed     Boolean
+  remaining   Int
+  resetAt     DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, endpoint])
+  @@index([createdAt])
 }

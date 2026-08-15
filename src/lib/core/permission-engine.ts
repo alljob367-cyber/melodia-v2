@@ -43,6 +43,9 @@ export type MelodiaOperation =
   | "MANAGE_MEMBERS"
   // Sharing
   | "SHARE_CONTENT"
+  // Billing
+  | "PURCHASE_CREDITS"
+  | "CHANGE_PLAN"
   // Admin
   | "ADMIN_ACCESS"
   | "ADMIN_ANALYTICS";
@@ -60,6 +63,9 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "VIEW_MEDIA",
     "CREATE_PROJECT",
     "VIEW_PROJECT",
+    // Billing — available to all active users
+    "PURCHASE_CREDITS",
+    "CHANGE_PLAN",
     "SHARE_CONTENT",
   ],
   artist_starter: [
@@ -69,6 +75,7 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST",
     "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "PURCHASE_CREDITS", "CHANGE_PLAN",
     "SHARE_CONTENT",
   ],
   artist_production: [
@@ -78,6 +85,7 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "PURCHASE_CREDITS", "CHANGE_PLAN",
     "SHARE_CONTENT",
   ],
   video_creator: [
@@ -87,6 +95,7 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "PURCHASE_CREDITS", "CHANGE_PLAN",
     "SHARE_CONTENT",
   ],
   artist_pro: [
@@ -96,6 +105,7 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT", "DELETE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "PURCHASE_CREDITS", "CHANGE_PLAN",
     "SHARE_CONTENT",
   ],
   label: [
@@ -106,6 +116,7 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
     "MANAGE_ORGANIZATION", "MANAGE_MEMBERS",
+    "PURCHASE_CREDITS", "CHANGE_PLAN",
     "SHARE_CONTENT",
   ],
 };
@@ -119,6 +130,7 @@ const ALL_OPERATIONS: MelodiaOperation[] = [
   "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
   "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
   "MANAGE_ORGANIZATION", "MANAGE_MEMBERS",
+  "PURCHASE_CREDITS", "CHANGE_PLAN",
   "SHARE_CONTENT",
   "ADMIN_ACCESS", "ADMIN_ANALYTICS",
 ];

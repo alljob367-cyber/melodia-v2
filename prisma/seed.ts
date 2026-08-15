@@ -4,11 +4,11 @@ import bcrypt from "bcryptjs";
 async function seed() {
   console.log("🌱 Seeding Melodia Up To Africa...");
 
-  // ============ 6 PRICING PLANS (FCFA) ============
+  // ============ 6 PRICING PLANS (FCFA) — Unified Plan Names ============
   const packs = [
     {
-      name: "Découverte",
-      plan: "decouverte",
+      name: "Basic",
+      plan: "basic",
       price: 2000,
       credits: 20,
       songsLimit: 3,
@@ -26,8 +26,8 @@ async function seed() {
       sortOrder: 1,
     },
     {
-      name: "Production Musicale",
-      plan: "production",
+      name: "Artist Starter",
+      plan: "artist_starter",
       price: 5000,
       credits: 50,
       songsLimit: 8,
@@ -48,8 +48,8 @@ async function seed() {
       sortOrder: 2,
     },
     {
-      name: "Artiste Actif",
-      plan: "artiste",
+      name: "Artist Production",
+      plan: "artist_production",
       price: 10000,
       credits: 100,
       songsLimit: 15,
@@ -63,6 +63,7 @@ async function seed() {
         "Voix IA premium",
         "Mix & Master avancé",
         "Pochettes premium",
+        "AI Producer",
         "2 générations parallèles",
         "15 GB stockage",
         "Support prioritaire",
@@ -71,8 +72,8 @@ async function seed() {
       sortOrder: 3,
     },
     {
-      name: "Vidéo",
-      plan: "video",
+      name: "Video Creator",
+      plan: "video_creator",
       price: 15000,
       credits: 150,
       songsLimit: 20,
@@ -94,8 +95,8 @@ async function seed() {
       sortOrder: 4,
     },
     {
-      name: "Artiste Professionnel",
-      plan: "professionnel",
+      name: "Artist Pro",
+      plan: "artist_pro",
       price: 25000,
       credits: 250,
       songsLimit: 50,
@@ -178,11 +179,11 @@ async function seed() {
       name: "Jean Paul",
       password: demoHashedPw,
       role: "user",
-      plan: "artiste",
+      plan: "artist_production",
     },
   });
 
-  // Create credits for demo user (Artiste Actif plan)
+  // Create credits for demo user (Artist Production plan)
   await db.userCredits.upsert({
     where: { userId: demoUser.id },
     update: {},
@@ -196,6 +197,7 @@ async function seed() {
       totalCoversUsed: 0,
       totalVideosUsed: 0,
       totalCreditsUsed: 0,
+      totalCreditsPurchased: 0,
       storageUsedMb: 0,
     },
   });
@@ -214,12 +216,40 @@ async function seed() {
       totalCoversUsed: 0,
       totalVideosUsed: 0,
       totalCreditsUsed: 0,
+      totalCreditsPurchased: 0,
       storageUsedMb: 0,
     },
   });
 
+  // ============ Create Subscriptions for existing users ============
+  // Admin subscription
+  await db.subscription.upsert({
+    where: { userId: adminUser.id },
+    update: {},
+    create: {
+      userId: adminUser.id,
+      plan: "label",
+      status: "active",
+      amountFcfa: 50000,
+      interval: "month",
+    },
+  });
+
+  // Demo subscription
+  await db.subscription.upsert({
+    where: { userId: demoUser.id },
+    update: {},
+    create: {
+      userId: demoUser.id,
+      plan: "artist_production",
+      status: "active",
+      amountFcfa: 10000,
+      interval: "month",
+    },
+  });
+
   console.log("✅ Seed completed!");
-  console.log("Plans: Découverte (2000), Production (5000), Artiste (10000), Vidéo (15000), Pro (25000), Label (50000)");
+  console.log("Plans: Basic (2000), Artist Starter (5000), Artist Production (10000), Video Creator (15000), Artist Pro (25000), Label (50000)");
   console.log("Admin: admin@melodia.ai / admin123");
   console.log("Demo: jean@example.com / demo123");
 }

@@ -39,6 +39,9 @@ export type CoreEvent =
   // Plan events
   | "PLAN_CHANGED"
   | "PLAN_EXPIRED"
+  // Subscription events
+  | "SUBSCRIPTION_CREATED"
+  | "SUBSCRIPTION_CANCELLED"
   // Notification events
   | "NOTIFICATION_SENT"
   // Export events

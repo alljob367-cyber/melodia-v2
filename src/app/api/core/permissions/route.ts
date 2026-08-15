@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { MelodiaCore } from "@/lib/core";
+import { Api } from "@/lib/core/api-responses";
 
 /**
  * GET /api/core/permissions
@@ -9,15 +10,19 @@ import { MelodiaCore } from "@/lib/core";
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
-  const core = new MelodiaCore(token.sub);
-  await core.initialize();
+  try {
+    const core = new MelodiaCore(token.sub);
+    await core.initialize();
 
-  return NextResponse.json({
-    plan: core.context.plan,
-    permissions: core.context.permissions,
-    usageLimits: core.context.usageLimits,
-  });
+    return Api.ok({
+      plan: core.context.plan,
+      permissions: core.context.permissions,
+      usageLimits: core.context.usageLimits,
+    });
+  } catch (err) {
+    return Api.handleRouteError(err);
+  }
 }

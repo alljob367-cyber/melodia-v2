@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { MelodiaCore } from "@/lib/core";
+import { MelodiaCore, PermissionDeniedError } from "@/lib/core";
 import { CreditEngine, estimateCost } from "@/lib/core/credit-engine";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { Api } from "@/lib/core/api-responses";
 
 /**
  * POST /api/core/credits/purchase
@@ -22,7 +23,7 @@ const purchaseSchema = z.object({
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   try {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     await core.initialize();
 
     // Check permission
-    core.requirePermission("PURCHASE_CREDITS" as any);
+    core.requirePermission("PURCHASE_CREDITS");
 
     // Find the credit pack
     const pack = await db.creditPack.findFirst({
@@ -42,10 +43,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!pack) {
-      return NextResponse.json(
-        { error: "Pack de crédits non trouvé ou inactif" },
-        { status: 404 }
-      );
+      return Api.notFound("Pack de crédits");
     }
 
     const idempotencyKey = `purchase-${token.sub}-${pack.id}-${Date.now()}`;
@@ -114,8 +112,7 @@ export async function POST(req: NextRequest) {
     // Get updated wallet
     const wallet = await CreditEngine.getWallet(token.sub);
 
-    return NextResponse.json({
-      success: true,
+    return Api.ok({
       payment: {
         id: payment.id,
         amountFcfa: pack.price,
@@ -126,11 +123,9 @@ export async function POST(req: NextRequest) {
       wallet,
     });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
+    if (err instanceof PermissionDeniedError) {
+      return Api.forbidden(err.message);
     }
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/credits/purchase] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

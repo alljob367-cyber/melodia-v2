@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { MelodiaCore } from "@/lib/core";
+import { MelodiaCore, PermissionDeniedError } from "@/lib/core";
 import { db } from "@/lib/db";
 import { EventBus } from "@/lib/core/event-bus";
 import { z } from "zod";
+import { Api } from "@/lib/core/api-responses";
 
 /**
  * POST /api/core/subscriptions/change
@@ -40,7 +41,7 @@ const PLAN_CREDITS: Record<string, { credits: number; songs: number; covers: num
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
   try {
@@ -52,16 +53,13 @@ export async function POST(req: NextRequest) {
     await core.initialize();
 
     // Check permission
-    core.requirePermission("CHANGE_PLAN" as any);
+    core.requirePermission("CHANGE_PLAN");
 
     const currentPlan = core.getContext().plan;
 
     // Validate: can't change to same plan
     if (currentPlan === data.newPlan) {
-      return NextResponse.json(
-        { error: "Vous êtes déjà sur ce plan" },
-        { status: 400 }
-      );
+      return Api.badRequest("Vous êtes déjà sur ce plan");
     }
 
     const isUpgrade = PLAN_PRICES[data.newPlan] > PLAN_PRICES[currentPlan];
@@ -155,8 +153,7 @@ export async function POST(req: NextRequest) {
     // Refresh context
     const newContext = await (await import("@/lib/core/user-context")).buildUserContext(token.sub);
 
-    return NextResponse.json({
-      success: true,
+    return Api.ok({
       planChange: {
         from: currentPlan,
         to: data.newPlan,
@@ -166,11 +163,9 @@ export async function POST(req: NextRequest) {
       context: newContext,
     });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
+    if (err instanceof PermissionDeniedError) {
+      return Api.forbidden(err.message);
     }
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("[core/subscriptions/change] Error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    return Api.handleRouteError(err);
   }
 }

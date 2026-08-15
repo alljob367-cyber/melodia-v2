@@ -38,6 +38,13 @@ export type {
 export { AIOrchestrator } from "./ai-orchestrator";
 export type { GenerationContext, OrchestratorResult } from "./ai-orchestrator";
 
+// API layer
+export { Api } from "./api-responses";
+export type { ApiSuccessResponse, ApiErrorResponse, PaginationMeta, ApiPaginatedResponse } from "./api-responses";
+export * as ApiSchemas from "./api-schemas";
+export { ERROR_CODES, API_REGISTRY, getApiRoute, getRoutesByPrefix } from "./api-registry";
+export type { ErrorCodeDef, ApiRouteDef } from "./api-registry";
+
 // ============ MELDODIA CORE CLASS ============
 
 import { buildUserContext, UserContext } from "./user-context";

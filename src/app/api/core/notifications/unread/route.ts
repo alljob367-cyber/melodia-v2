@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { db } from "@/lib/db";
+import { Api } from "@/lib/core/api-responses";
 
 /**
  * GET /api/core/notifications/unread
@@ -9,19 +10,23 @@ import { db } from "@/lib/db";
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
-  const [count, notifications] = await Promise.all([
-    db.notification.count({
-      where: { userId: token.sub, isRead: false },
-    }),
-    db.notification.findMany({
-      where: { userId: token.sub, isRead: false },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
-  ]);
+  try {
+    const [count, notifications] = await Promise.all([
+      db.notification.count({
+        where: { userId: token.sub, isRead: false },
+      }),
+      db.notification.findMany({
+        where: { userId: token.sub, isRead: false },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
 
-  return NextResponse.json({ count, notifications });
+    return Api.ok({ count, notifications });
+  } catch (err) {
+    return Api.handleRouteError(err);
+  }
 }

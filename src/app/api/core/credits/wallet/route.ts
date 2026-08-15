@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { CreditEngine } from "@/lib/core/credit-engine";
+import { Api } from "@/lib/core/api-responses";
 
 /**
  * GET /api/core/credits/wallet
@@ -9,13 +10,17 @@ import { CreditEngine } from "@/lib/core/credit-engine";
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token?.sub) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return Api.unauthorized();
   }
 
-  const wallet = await CreditEngine.getWallet(token.sub);
-  if (!wallet) {
-    return NextResponse.json({ error: "Portefeuille non trouvé" }, { status: 404 });
-  }
+  try {
+    const wallet = await CreditEngine.getWallet(token.sub);
+    if (!wallet) {
+      return Api.notFound("Portefeuille");
+    }
 
-  return NextResponse.json({ wallet });
+    return Api.ok({ wallet });
+  } catch (err) {
+    return Api.handleRouteError(err);
+  }
 }

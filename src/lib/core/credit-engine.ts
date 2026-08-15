@@ -21,29 +21,37 @@ export type CreditOperation =
   | "generate_composition"  // 1 credit
   | "generate_cover"        // 3 credits
   | "generate_audio"        // 2 credits
-  | "generate_video_economy" // 20 credits per 10s
-  | "generate_video_standard" // 50 credits per 10s
-  | "generate_video_premium" // 75 credits per 10s
-  | "generate_storyboard"   // 5 credits
+  | "generate_video_economy" // 20 credits per 10s (LAUNCH LOCKED)
+  | "generate_video_standard" // 50 credits per 10s (LAUNCH LOCKED)
+  | "generate_video_premium" // 75 credits per 10s (LAUNCH LOCKED)
+  | "generate_storyboard"   // 5 credits (LAUNCH LOCKED)
   | "use_ai_producer"       // 3 credits
   | "use_voice_studio"      // 5 credits
   | "use_mix_master"        // 4 credits
-  | "full_song";            // 7 credits (lyrics+comp+cover+audio)
+  | "full_song";            // 7 credits (lyrics+comp+audio, NO cover)
 
 export const CREDIT_COSTS: Record<CreditOperation, number> = {
   generate_lyrics: 1,
   generate_composition: 1,
   generate_cover: 3,
   generate_audio: 2,
-  generate_video_economy: 20,
-  generate_video_standard: 50,
-  generate_video_premium: 75,
-  generate_storyboard: 5,
+  generate_video_economy: 20,  // Locked at launch
+  generate_video_standard: 50, // Locked at launch
+  generate_video_premium: 75,  // Locked at launch
+  generate_storyboard: 5,      // Locked at launch
   use_ai_producer: 3,
   use_voice_studio: 5,
   use_mix_master: 4,
-  full_song: 7,
+  full_song: 7,               // lyrics(1) + comp(1) + audio(2) + cover(3) = 7
 };
+
+/** Operations locked during initial launch (video generation) */
+export const LAUNCH_LOCKED_CREDIT_OPS: CreditOperation[] = [
+  "generate_video_economy",
+  "generate_video_standard",
+  "generate_video_premium",
+  "generate_storyboard",
+];
 
 // ============ ESTIMATE ============
 
@@ -57,6 +65,11 @@ export function estimateCost(
   operation: CreditOperation,
   options?: { durationSeconds?: number }
 ): CostEstimate {
+  // Launch gate: video operations are locked
+  if (LAUNCH_LOCKED_CREDIT_OPS.includes(operation)) {
+    throw new Error(`Opération '${operation}' non disponible lors du lancement initial. La vidéo arrive bientôt !`);
+  }
+
   let credits = CREDIT_COSTS[operation];
   let breakdown = `${operation}: ${credits} credits`;
 

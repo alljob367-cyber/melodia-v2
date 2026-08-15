@@ -130,21 +130,43 @@ interface StudioGateProps {
 
 /**
  * StudioGate — Show content only if the user has access to a specific studio.
- * Audio: basic+
- * Video: artist_starter+ (for economy), video_creator+ (for standard/premium)
- * Artist: artist_production+
- * Label: label
+ * V4 Plan gating:
+ * Audio: decouverte+ (all plans)
+ * Video: video_studio+ (LAUNCH LOCKED — always shows "bientôt" for now)
+ * Artist: artiste_actif+
+ * Label: label (LAUNCH LOCKED at initial launch)
  */
 export function StudioGate({ studio, children, fallback = null, showUpgrade }: StudioGateProps) {
   const { canPerform, context, loading } = useMelodia();
 
   if (loading) return null;
 
+  // V4 Launch locks: Video Studio and Label Studio are not available at launch
+  const LAUNCH_LOCKED_STUDIOS: Partial<Record<"audio" | "video" | "artist" | "label", boolean>> = {
+    video: true,   // Video Studio disabled at launch
+    label: true,   // Label Studio disabled at launch
+  };
+
+  if (LAUNCH_LOCKED_STUDIOS[studio]) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <Lock className="h-10 w-10 text-cyan-400 mb-3" />
+        <p className="font-medium text-white mb-1">Studio {studio.charAt(0).toUpperCase() + studio.slice(1)} — Bientôt disponible</p>
+        <p className="text-sm text-slate-400 mb-4">
+          Ce studio est en préparation et sera disponible prochainement. En attendant, profite d'Audio Studio et Cover Studio !
+        </p>
+        <a href="/studio/audio" className="btn-gradient px-4 py-2 rounded-lg text-sm font-medium">
+          Audio Studio
+        </a>
+      </div>
+    );
+  }
+
   const studioPermissions: Record<string, string[]> = {
-    audio: ["CREATE_SONG"],       // Basic can use audio studio
-    video: ["CREATE_VIDEO"],       // Needs video permission
-    artist: ["UPDATE_ARTIST_IDENTITY"], // Needs artist production
-    label: ["MANAGE_ORGANIZATION"], // Only label plan
+    audio: ["CREATE_SONG"],       // Decouverte+ can use audio studio
+    video: ["CREATE_VIDEO"],      // Needs video_studio plan (won't reach here due to launch lock)
+    artist: ["UPDATE_ARTIST_IDENTITY"], // Needs artiste_actif+
+    label: ["MANAGE_ORGANIZATION"], // Only label plan (won't reach here due to launch lock)
   };
 
   const required = studioPermissions[studio] || [];

@@ -1,8 +1,10 @@
 /**
- * MELODIA PERMISSION ENGINE
+ * MELODIA PERMISSION ENGINE V4
  * 
  * Centralized permission checking. Backend ALWAYS verifies.
  * Frontend can use PermissionGate to hide UI, but real enforcement is here.
+ * 
+ * V4 Plans: decouverte → production → artiste_actif → video_studio → artiste_pro → label
  */
 
 import { db } from "../db";
@@ -42,8 +44,9 @@ export type MelodiaOperation =
   // Organization
   | "MANAGE_ORGANIZATION"
   | "MANAGE_MEMBERS"
-  // Sharing
+  // Sharing & Download
   | "SHARE_CONTENT"
+  | "DOWNLOAD_MEDIA"
   // Billing
   | "PURCHASE_CREDITS"
   | "CHANGE_PLAN"
@@ -51,65 +54,66 @@ export type MelodiaOperation =
   | "ADMIN_ACCESS"
   | "ADMIN_ANALYTICS";
 
-// ============ PLAN PERMISSIONS MAP ============
+// ============ V4 PLAN PERMISSIONS MAP ============
 
 const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
-  basic: [
-    "CREATE_SONG",
-    "CREATE_LYRICS",
-    "CREATE_AUDIO",
-    "CREATE_COMPOSITION",
-    "CREATE_COVER",
-    "UPLOAD_MEDIA",
-    "UPDATE_MEDIA",
-    "VIEW_MEDIA",
-    "CREATE_PROJECT",
-    "VIEW_PROJECT",
-    // Billing — available to all active users
-    "PURCHASE_CREDITS",
-    "CHANGE_PLAN",
-    "SHARE_CONTENT",
-  ],
-  artist_starter: [
+  // Plan 1 — DÉCOUVERTE (2 000 FCFA / 20 crédits)
+  decouverte: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
-    "CREATE_COVER", "CREATE_VIDEO",  // Economy video
+    "CREATE_COVER",
+    "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA",
+    "CREATE_PROJECT", "VIEW_PROJECT",
+    "SHARE_CONTENT", "DOWNLOAD_MEDIA",
+    "PURCHASE_CREDITS", "CHANGE_PLAN",
+  ],
+  // Plan 2 — PRODUCTION MUSICALE (5 000 FCFA / 60 crédits)
+  production: [
+    "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
+    "CREATE_COVER",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT",
-    "CREATE_ARTIST", "VIEW_ARTIST",
-    "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "USE_VOICE_STUDIO",   // Voice IA standard
+    "USE_MIX_MASTER",     // Mix basique, Mastering basique
+    "USE_AI_PRODUCER",    // MELO AI Producteur
+    "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
-    "SHARE_CONTENT",
   ],
-  artist_production: [
+  // Plan 3 — ARTISTE ACTIF (10 000 FCFA / 120 crédits)
+  artiste_actif: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
-    "CREATE_COVER", "CREATE_VIDEO", "CREATE_STORYBOARD",
+    "CREATE_COVER",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
-    "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "USE_AI_PRODUCER",    // MELO AI Producteur
+    "USE_VOICE_STUDIO",   // Voice Premium
+    "USE_MIX_MASTER",     // Mix avancé, Mastering
+    "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
-    "SHARE_CONTENT",
   ],
-  video_creator: [
+  // Plan 4 — VIDEO STUDIO (15 000 FCFA / 180 crédits) — Désactivé au lancement
+  video_studio: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER", "CREATE_VIDEO", "CREATE_STORYBOARD", "EXPORT_VIDEO",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
-    "SHARE_CONTENT",
   ],
-  artist_pro: [
+  // Plan 5 — ARTISTE PROFESSIONNEL (25 000 FCFA / 350 crédits)
+  artiste_pro: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER", "CREATE_VIDEO", "CREATE_STORYBOARD", "EXPORT_VIDEO",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
     "CREATE_PROJECT", "VIEW_PROJECT", "UPDATE_PROJECT", "DELETE_PROJECT",
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
+    "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
-    "SHARE_CONTENT",
   ],
+  // Plan 6 — LABEL / STUDIO (50 000 FCFA / 800 crédits)
   label: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER", "CREATE_VIDEO", "CREATE_STORYBOARD", "EXPORT_VIDEO",
@@ -118,8 +122,8 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
     "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
     "MANAGE_ORGANIZATION", "MANAGE_MEMBERS",
+    "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
-    "SHARE_CONTENT",
   ],
 };
 
@@ -132,10 +136,44 @@ const ALL_OPERATIONS: MelodiaOperation[] = [
   "CREATE_ARTIST", "VIEW_ARTIST", "UPDATE_ARTIST_IDENTITY",
   "USE_AI_PRODUCER", "USE_VOICE_STUDIO", "USE_MIX_MASTER",
   "MANAGE_ORGANIZATION", "MANAGE_MEMBERS",
+  "SHARE_CONTENT", "DOWNLOAD_MEDIA",
   "PURCHASE_CREDITS", "CHANGE_PLAN",
-  "SHARE_CONTENT",
   "ADMIN_ACCESS", "ADMIN_ANALYTICS",
 ];
+
+// ============ LAUNCH FEATURE FLAGS ============
+
+export const LAUNCH_CONFIG = {
+  /** Video Studio is architecturally ready but disabled for initial launch */
+  VIDEO_STUDIO_ENABLED: false,
+  /** Label module is architecturally ready but disabled for initial launch */
+  LABEL_ENABLED: false,
+  /** API Access is disabled for initial launch */
+  API_ACCESS_ENABLED: false,
+  /** Maximum parallel generations per plan */
+  PARALLEL_GENERATIONS: {
+    decouverte: 1,
+    production: 2,
+    artiste_actif: 2,
+    video_studio: 3,
+    artiste_pro: 5,
+    label: 10,
+  } as Record<string, number>,
+  /** Storage limits in GB per plan */
+  STORAGE_LIMIT_GB: {
+    decouverte: 0,
+    production: 5,
+    artiste_actif: 15,
+    video_studio: 25,
+    artiste_pro: 50,
+    label: 100,
+  } as Record<string, number>,
+} as const;
+
+// Operations locked during initial launch (returns permission denied even if plan allows)
+const LAUNCH_LOCKED_OPERATIONS: MelodiaOperation[] = LAUNCH_CONFIG.VIDEO_STUDIO_ENABLED
+  ? []
+  : ["CREATE_VIDEO", "CREATE_STORYBOARD", "EXPORT_VIDEO"];
 
 // ============ PERMISSION ENGINE ============
 
@@ -161,8 +199,18 @@ export class PermissionEngine {
       return { allowed: true, plan, operation };
     }
 
+    // Launch gate: certain operations are locked regardless of plan
+    if (LAUNCH_LOCKED_OPERATIONS.includes(operation)) {
+      return {
+        allowed: false,
+        plan,
+        operation,
+        reason: `Opération '${operation}' non disponible lors du lancement initial. Bientôt disponible !`,
+      };
+    }
+
     // Get permissions for this plan
-    const planPerms = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.basic;
+    const planPerms = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.decouverte;
 
     const allowed = planPerms.includes(operation);
 
@@ -170,7 +218,7 @@ export class PermissionEngine {
       allowed,
       plan,
       operation,
-      reason: allowed ? undefined : `Operation '${operation}' not available on plan '${plan}'`,
+      reason: allowed ? undefined : `Opération '${operation}' non disponible sur le plan '${plan}'`,
     };
   }
 
@@ -194,7 +242,9 @@ export class PermissionEngine {
    */
   static getPermissionsForPlan(plan: string, userRole: string): MelodiaOperation[] {
     if (userRole === "admin") return ALL_OPERATIONS;
-    return PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.basic;
+    const base = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.decouverte;
+    // Filter out launch-locked operations
+    return base.filter(op => !LAUNCH_LOCKED_OPERATIONS.includes(op));
   }
 
   /**

@@ -35,6 +35,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   planRequired?: string;
+  launchLocked?: boolean;  // Disabled during initial launch
 }
 
 interface NavSection {
@@ -57,9 +58,9 @@ const navSections: NavSection[] = [
     title: "Studios",
     items: [
       { href: "/studio/audio", label: "Audio Studio", icon: Headphones },
-      { href: "/studio/video", label: "Vidéo Studio", icon: Video, planRequired: "video_creator" },
-      { href: "/studio/artist", label: "Artist Studio", icon: Palette, planRequired: "artist_starter" },
-      { href: "/studio/label", label: "Label Studio", icon: Building2, planRequired: "label" },
+      { href: "/studio/video", label: "Vidéo Studio", icon: Video, planRequired: "video_studio", launchLocked: true },
+      { href: "/studio/artist", label: "Artist Studio", icon: Palette, planRequired: "artiste_actif" },
+      { href: "/studio/label", label: "Label Studio", icon: Building2, planRequired: "label", launchLocked: true },
     ],
   },
   {
@@ -75,11 +76,11 @@ const navSections: NavSection[] = [
 // ============ PLAN HIERARCHY ============
 
 const PLAN_LEVEL: Record<string, number> = {
-  basic: 0,
-  artist_starter: 1,
-  artist_production: 2,
-  video_creator: 3,
-  artist_pro: 4,
+  decouverte: 0,
+  production: 1,
+  artiste_actif: 2,
+  video_studio: 3,
+  artiste_pro: 4,
   label: 5,
 };
 
@@ -97,7 +98,7 @@ interface SidebarProps {
 export function Sidebar({
   collapsed,
   onToggle,
-  userPlan = "basic",
+  userPlan = "decouverte",
   songsRemaining = 2,
   songsTotal = 2,
   unreadNotifications = 0,
@@ -107,17 +108,17 @@ export function Sidebar({
   const userLevel = PLAN_LEVEL[userPlan] ?? 0;
 
   const planLabels: Record<string, string> = {
-    basic: "Basic",
-    artist_starter: "Starter",
-    artist_production: "Production",
-    video_creator: "Vidéo",
-    artist_pro: "Artiste Pro",
-    label: "Label/Studio",
     decouverte: "Découverte",
     production: "Production",
-    artiste: "Artiste Actif",
-    video: "Vidéo",
-    professionnel: "Pro",
+    artiste_actif: "Artiste Actif",
+    video_studio: "Vidéo",
+    artiste_pro: "Artiste Pro",
+    label: "Label/Studio",
+    // Legacy compat
+    basic: "Découverte",
+    artist_starter: "Production",
+    artist_production: "Artiste Actif",
+    video_creator: "Vidéo",
   };
 
   return (
@@ -157,8 +158,9 @@ export function Sidebar({
                 const isActive =
                   pathname === item.href ||
                   (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                const isLaunchLocked = item.launchLocked === true;
                 const isLocked =
-                  item.planRequired && (PLAN_LEVEL[item.planRequired] ?? 0) > userLevel;
+                  isLaunchLocked || (item.planRequired && (PLAN_LEVEL[item.planRequired] ?? 0) > userLevel);
 
                 return (
                   <Link
@@ -185,7 +187,7 @@ export function Sidebar({
                         <span className="truncate flex-1">{item.label}</span>
                         {isLocked && (
                           <Badge variant="outline" className="text-[8px] border-white/10 text-slate-500 px-1 py-0">
-                            PRO
+                            {isLaunchLocked ? "BIENTÔT" : "PRO"}
                           </Badge>
                         )}
                         {item.href === "/notifications" && unreadNotifications > 0 && (

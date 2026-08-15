@@ -312,3 +312,37 @@ Stage Summary:
 - All routes now use centralized ApiSchemas from api-schemas.ts
 - Prisma schema performance index added for organizationId queries
 - Permission mapping consistency fixed across all modules
+---
+Task ID: 6
+Agent: Super Z (Main)
+Task: PHASE 6 — FRONTEND Complet pour Melodia Core Platform
+
+Work Log:
+- Explored entire project structure (Next.js 16, shadcn/ui 40+ components, Prisma, Core API)
+- Created React Query hooks layer (src/hooks/use-core-queries.ts) with 25+ hooks for all Core API endpoints
+- Updated Sidebar with navigation sections (Principal, Studios, Compte) and plan-gated studio links
+- Created AppLayout shared component (src/components/dashboard/app-layout.tsx)
+- Created Audio Studio page (/studio/audio) with quick actions, generation form, style/mood selectors
+- Created Video Studio page (/studio/video) with 3 video tiers, generation form, storyboard
+- Created Artist Studio page (/studio/artist) with identity builder, visual style, color palette, AI Producer, Voice Studio
+- Created Label Studio page (/studio/label) with org dashboard, team management, bulk analytics, API access
+- Created Notifications page (/notifications) with filter tabs, mark as read, pagination
+- Created Settings page (/settings) with 4 tabs (Profil, Abonnement, Sécurité, Préférences)
+- Created Projects page (/projects) with CRUD, search/filter, create dialog
+- Created Media Library page (/media) with upload zone, grid/list view, type filters, drag-and-drop
+- Created AudioPlayer component (src/components/studio/audio-player.tsx) with compact + full modes
+- Created GenerationTracker component (src/components/studio/generation-tracker.tsx) for real-time progress
+- Improved Dashboard to use Core API via React Query, GenerationTracker, studio quick actions, PermissionGate
+- Updated MobileBottomNav with Studio link
+- Added ReactQueryProvider in layout.tsx via providers.tsx
+- Fixed TypeScript errors (Framer Motion ease typing, mutation type casts)
+- Verified: 0 TS errors in src/, Next.js build succeeds, all 8 new pages compiled
+
+Stage Summary:
+- 8 new pages created: /studio/audio, /studio/video, /studio/artist, /studio/label, /notifications, /settings, /projects, /media
+- 5 new components: AppLayout, AudioPlayer, GenerationTracker, ReactQueryProvider (providers.tsx)
+- 1 new hooks file: use-core-queries.ts (25+ React Query hooks)
+- Sidebar + MobileBottomNav updated with new navigation
+- Dashboard upgraded to use Core API + React Query
+- TypeScript: 0 errors in project src/ (only 2 pre-existing in skills/)
+- Next.js build: SUCCESS — all pages compiled and routed

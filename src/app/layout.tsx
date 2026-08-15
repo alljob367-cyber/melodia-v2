@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/auth-provider";
 import { MeloChat } from "@/components/melo/melo-chat";
 import { MelodiaProvider } from "@/contexts/melodia-context";
+import { ReactQueryProvider } from "@/components/providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -51,11 +52,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <MelodiaProvider>
-              {children}
-              {/* Melo — Assistant IA flottant (disponible sur TOUTES les pages) */}
-              <MeloChat />
-            </MelodiaProvider>
+            <ReactQueryProvider>
+              <MelodiaProvider>
+                {children}
+                {/* Melo — Assistant IA flottant (disponible sur TOUTES les pages) */}
+                <MeloChat />
+              </MelodiaProvider>
+            </ReactQueryProvider>
           </AuthProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>

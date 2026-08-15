@@ -211,8 +211,8 @@ export function MobileBottomNav() {
     { href: "/dashboard", label: "Accueil", icon: Home },
     { href: "/creations", label: "Créations", icon: Music },
     { href: "/create", label: "Créer", icon: PlusCircle, primary: true },
-    { href: "/subscription", label: "Pack", icon: Crown },
-    { href: "/dashboard?tab=help", label: "Aide", icon: Headphones },
+    { href: "/studio/audio", label: "Studio", icon: Headphones },
+    { href: "/settings", label: "Profil", icon: Crown },
   ];
 
   return (

@@ -3,6 +3,7 @@
 import React from "react";
 import { useMelodia } from "@/contexts/melodia-context";
 import type { MelodiaOperation } from "@/lib/core/permission-engine";
+import { Lock } from "lucide-react";
 
 // ============ PERMISSION GATE ============
 
@@ -115,4 +116,58 @@ export function CreditsGate({ minCredits, children, fallback = null }: CreditsGa
 
   const effective = context?.creditsEffective || 0;
   return effective >= minCredits ? <>{children}</> : <>{fallback}</>;
+}
+
+// ============ STUDIO GATE ============
+
+interface StudioGateProps {
+  /** Which studio to gate */
+  studio: "audio" | "video" | "artist" | "label";
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  showUpgrade?: boolean;
+}
+
+/**
+ * StudioGate — Show content only if the user has access to a specific studio.
+ * Audio: basic+
+ * Video: artist_starter+ (for economy), video_creator+ (for standard/premium)
+ * Artist: artist_production+
+ * Label: label
+ */
+export function StudioGate({ studio, children, fallback = null, showUpgrade }: StudioGateProps) {
+  const { canPerform, context, loading } = useMelodia();
+
+  if (loading) return null;
+
+  const studioPermissions: Record<string, string[]> = {
+    audio: ["CREATE_SONG"],       // Basic can use audio studio
+    video: ["CREATE_VIDEO"],       // Needs video permission
+    artist: ["UPDATE_ARTIST_IDENTITY"], // Needs artist production
+    label: ["MANAGE_ORGANIZATION"], // Only label plan
+  };
+
+  const required = studioPermissions[studio] || [];
+  const allowed = required.every((perm) => canPerform(perm as MelodiaOperation));
+
+  if (allowed) {
+    return <>{children}</>;
+  }
+
+  if (showUpgrade) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <Lock className="h-10 w-10 text-muted-foreground mb-3" />
+        <p className="font-medium text-white mb-1">Studio {studio.charAt(0).toUpperCase() + studio.slice(1)} indisponible</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Passez à un plan supérieur pour accéder à ce studio
+        </p>
+        <a href="/subscription" className="btn-gradient px-4 py-2 rounded-lg text-sm font-medium">
+          Voir les plans
+        </a>
+      </div>
+    );
+  }
+
+  return <>{fallback}</>;
 }

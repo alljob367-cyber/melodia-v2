@@ -374,3 +374,39 @@ Stage Summary:
 - Frontend ↔ Backend: 100% endpoint coverage (all 30 frontend hooks have matching API routes)
 - TypeScript: 0 errors in src/
 - Next.js build: SUCCESS
+
+---
+Task ID: 8
+Agent: main
+Task: PHASE 8 - TESTS - Complete test suite for Melodia Core Platform
+
+Work Log:
+- Installed Vitest 4.1, React Testing Library 16, jest-dom 7, MSW 2, jsdom
+- Created vitest.config.ts with jsdom environment, path alias @/ support
+- Created test setup file (src/__tests__/setup.ts) with Next.js/NextAuth mocks
+- Created 11 test files across 4 categories (unit, integration, hooks, components)
+- **Unit Tests (7 files, ~150 tests)**:
+  - permission-engine.test.ts: 28 operations × 6 plans matrix, admin override, plan hierarchy, PermissionDeniedError
+  - credit-engine.test.ts: 12 CREDIT_COSTS, estimateCost (including video duration), cost consistency
+  - api-responses.test.ts: ok/created/paginated/ack/error helpers, handleRouteError (Zod, PermissionDenied, French messages, provider errors)
+  - api-schemas.test.ts: All 15 Zod schemas (Generate, Projects, Artists, Media, Credits, Subscriptions, Payments, Studios, Notifications), OPERATION_PERMISSION_MAP
+  - event-bus.test.ts: on/emit/off, multiple subscribers, audit trail persistence, error isolation, 28 event types
+  - user-context.test.ts: hasPermission, requirePermission, PLAN_LIMITS, plan hierarchy
+  - api-registry.test.ts: ERROR_CODES, API_REGISTRY, getApiRoute, getRoutesByPrefix
+  - payment-providers.test.ts: Stripe/Wave/FPay routing, webhook handling, FCFA→USD conversion, manual provider
+- **Integration Tests (2 files, ~50 tests)**:
+  - melodia-core.test.ts: Full pipeline (initialize→canPerform→requirePermission→hasCredits→generate), plan-gated operations, admin override, pipeline order verification
+  - credit-flow.test.ts: Complete reserve→consume flow, reserve→refund flow on failure, idempotency verification, CREDITS_LOW detection
+- **Hook Tests (1 file, ~19 tests)**:
+  - core-queries.test.ts: Query key structure, coreFetch logic, 29 hook→endpoint mappings, invalidation patterns, stale time configuration
+- All 235 tests pass (235/235 ✓) in ~10s
+
+Stage Summary:
+- Vitest 4.1 configured as test framework with jsdom environment
+- 235 tests across 11 files covering all Core modules
+- Permission matrix fully validated (28 ops × 6 plans)
+- Credit pipeline idempotency verified
+- Payment provider routing tested (Stripe/Wave/FPay)
+- API error handling tested with French+English messages
+- React Query hook structure validated
+- Test scripts added: npm test, npm run test:watch, npm run test:coverage

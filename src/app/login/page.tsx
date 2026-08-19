@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertTriangle, ServerCrash } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
+
     if (!email || !password) {
       toast.error("Veuillez remplir tous les champs");
       return;
@@ -35,14 +38,29 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error("Email ou mot de passe incorrect");
+        // Classify the error for the user
+        const err = result.error.toLowerCase();
+        if (err.includes("database") || err.includes("db") || err.includes("configure")) {
+          setServerError("Erreur de configuration serveur. Vérifiez que la base de données est bien configurée.");
+          toast.error("Erreur serveur — contactez l'administrateur");
+        } else {
+          toast.error("Email ou mot de passe incorrect");
+        }
       } else {
         toast.success("Connexion réussie !");
         // Use window.location for full reload to ensure session cookie is picked up by middleware
-        setTimeout(() => { window.location.href = "/dashboard"; }, 500);
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 500);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      const msg = error?.message || "";
+      if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed")) {
+        setServerError("Impossible de joindre le serveur. Vérifiez votre connexion internet.");
+      } else {
+        setServerError("Erreur de connexion au serveur. Réessayez.");
+      }
       toast.error("Erreur de connexion au serveur");
     } finally {
       setLoading(false);
@@ -66,6 +84,17 @@ export default function LoginPage() {
           <p className="text-slate-400 text-center text-sm mb-8">
             Accède à ton studio musical IA
           </p>
+
+          {/* Server error banner */}
+          {serverError && (
+            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+              <ServerCrash className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-red-400 font-medium">Erreur serveur</p>
+                <p className="text-xs text-red-300/70 mt-1">{serverError}</p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">

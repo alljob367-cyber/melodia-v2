@@ -4,7 +4,7 @@
  * Centralized permission checking. Backend ALWAYS verifies.
  * Frontend can use PermissionGate to hide UI, but real enforcement is here.
  * 
- * V4 Plans: decouverte → production → artiste_actif → video_studio → artiste_pro → label
+ * Plans: basic → artist_starter → artist_production → video_creator → artist_pro → label
  */
 
 import { db } from "../db";
@@ -57,8 +57,8 @@ export type MelodiaOperation =
 // ============ V4 PLAN PERMISSIONS MAP ============
 
 const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
-  // Plan 1 — DÉCOUVERTE (2 000 FCFA / 20 crédits)
-  decouverte: [
+  // Plan 1 — BASIC (2 000 FCFA / 20 crédits)
+  basic: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA",
@@ -66,8 +66,8 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
   ],
-  // Plan 2 — PRODUCTION MUSICALE (5 000 FCFA / 60 crédits)
-  production: [
+  // Plan 2 — ARTIST STARTER (5 000 FCFA / 60 crédits)
+  artist_starter: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
@@ -78,8 +78,8 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
   ],
-  // Plan 3 — ARTISTE ACTIF (10 000 FCFA / 120 crédits)
-  artiste_actif: [
+  // Plan 3 — ARTIST PRODUCTION (10 000 FCFA / 120 crédits)
+  artist_production: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
@@ -91,8 +91,8 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
   ],
-  // Plan 4 — VIDEO STUDIO (15 000 FCFA / 180 crédits) — Désactivé au lancement
-  video_studio: [
+  // Plan 4 — VIDEO CREATOR (15 000 FCFA / 180 crédits) — Désactivé au lancement
+  video_creator: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER", "CREATE_VIDEO", "CREATE_STORYBOARD", "EXPORT_VIDEO",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
@@ -102,8 +102,8 @@ const PLAN_PERMISSIONS: Record<string, MelodiaOperation[]> = {
     "SHARE_CONTENT", "DOWNLOAD_MEDIA",
     "PURCHASE_CREDITS", "CHANGE_PLAN",
   ],
-  // Plan 5 — ARTISTE PROFESSIONNEL (25 000 FCFA / 350 crédits)
-  artiste_pro: [
+  // Plan 5 — ARTIST PRO (25 000 FCFA / 350 crédits)
+  artist_pro: [
     "CREATE_SONG", "CREATE_LYRICS", "CREATE_AUDIO", "CREATE_COMPOSITION",
     "CREATE_COVER", "CREATE_VIDEO", "CREATE_STORYBOARD", "EXPORT_VIDEO",
     "UPLOAD_MEDIA", "UPDATE_MEDIA", "VIEW_MEDIA", "DELETE_MEDIA",
@@ -152,20 +152,20 @@ export const LAUNCH_CONFIG = {
   API_ACCESS_ENABLED: false,
   /** Maximum parallel generations per plan */
   PARALLEL_GENERATIONS: {
-    decouverte: 1,
-    production: 2,
-    artiste_actif: 2,
-    video_studio: 3,
-    artiste_pro: 5,
+    basic: 1,
+    artist_starter: 2,
+    artist_production: 2,
+    video_creator: 3,
+    artist_pro: 5,
     label: 10,
   } as Record<string, number>,
   /** Storage limits in GB per plan */
   STORAGE_LIMIT_GB: {
-    decouverte: 0,
-    production: 5,
-    artiste_actif: 15,
-    video_studio: 25,
-    artiste_pro: 50,
+    basic: 0,
+    artist_starter: 5,
+    artist_production: 15,
+    video_creator: 25,
+    artist_pro: 50,
     label: 100,
   } as Record<string, number>,
 } as const;
@@ -210,7 +210,7 @@ export class PermissionEngine {
     }
 
     // Get permissions for this plan
-    const planPerms = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.decouverte;
+    const planPerms = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.basic;
 
     const allowed = planPerms.includes(operation);
 
@@ -242,7 +242,7 @@ export class PermissionEngine {
    */
   static getPermissionsForPlan(plan: string, userRole: string): MelodiaOperation[] {
     if (userRole === "admin") return ALL_OPERATIONS;
-    const base = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.decouverte;
+    const base = PLAN_PERMISSIONS[plan] || PLAN_PERMISSIONS.basic;
     // Filter out launch-locked operations
     return base.filter(op => !LAUNCH_LOCKED_OPERATIONS.includes(op));
   }

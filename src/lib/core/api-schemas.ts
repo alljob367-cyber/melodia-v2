@@ -155,11 +155,11 @@ export const CreditHistorySchema = PaginationSchema.extend({
 
 export const ChangePlanSchema = z.object({
   newPlan: z.enum([
-    "decouverte",
-    "production",
-    "artiste_actif",
-    "video_studio",
-    "artiste_pro",
+    "basic",
+    "artist_starter",
+    "artist_production",
+    "video_creator",
+    "artist_pro",
     "label",
   ]),
 });

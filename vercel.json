@@ -6,6 +6,15 @@
   "installCommand": "npm install",
   "regions": ["cdg1"],
   "functions": {
+    "src/app/api/core/generate/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/core/studios/audio/generate/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/core/studios/video/generate/route.ts": {
+      "maxDuration": 120
+    },
     "src/app/api/generate/route.ts": {
       "maxDuration": 120
     },

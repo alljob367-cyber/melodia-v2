@@ -109,6 +109,14 @@ export function MelodiaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Don't fetch context on public pages (no auth required)
+    if (typeof window === 'undefined') return;
+    const pathname = window.location.pathname;
+    const publicPaths = ['/', '/login', '/signup'];
+    if (publicPaths.includes(pathname)) {
+      setLoading(false);
+      return;
+    }
     fetchContext();
   }, [fetchContext]);
 

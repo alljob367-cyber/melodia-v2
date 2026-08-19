@@ -74,8 +74,9 @@ export class StripeProvider {
   static async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
     const apiKey = this.getApiKey();
 
-    // Convert FCFA to USD cents (approximate: 1 USD ≈ 600 FCFA)
-    const amountUsdCents = Math.round((params.amountFcfa / 600) * 100);
+    // Convert FCFA to USD cents (configurable rate, default: 1 USD ≈ 600 FCFA)
+    const conversionRate = Number(process.env.FCFA_TO_USD_RATE) || 600;
+    const amountUsdCents = Math.round((params.amountFcfa / conversionRate) * 100);
 
     try {
       const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -157,7 +158,31 @@ export class StripeProvider {
    * Validates the signature and processes checkout.session.completed events.
    */
   static async handleWebhook(payload: string, signature: string): Promise<WebhookResult> {
-    // In production, verify signature with STRIPE_WEBHOOK_SECRET
+    // Verify Stripe webhook signature
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (webhookSecret && signature) {
+      try {
+        const crypto = await import('crypto');
+        const payloadBuffer = Buffer.from(payload);
+        const expectedSig = crypto
+          .createHmac('sha256', webhookSecret)
+          .update(payloadBuffer)
+          .digest('hex');
+        const receivedSig = signature.startsWith('sha256=') ? signature.slice(7) : signature;
+        if (receivedSig !== expectedSig) {
+          throw new Error('Stripe webhook signature verification failed');
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('signature verification')) {
+          throw err;
+        }
+        // If crypto verification fails for other reasons, log but continue in dev
+        console.warn('[StripeProvider] Signature verification failed, continuing without verification');
+      }
+    } else if (!webhookSecret) {
+      console.warn('[StripeProvider] STRIPE_WEBHOOK_SECRET not set — skipping signature verification');
+    }
+
     const event = JSON.parse(payload);
 
     if (event.type === "checkout.session.completed") {

@@ -153,7 +153,7 @@ export async function buildUserContext(userId: string): Promise<UserContext | nu
     organizationId: orgMembership?.organizationId || null,
     organizationRole: orgMembership?.role || null,
 
-    subscriptionStatus: "active", // TODO: check against real subscription
+    subscriptionStatus: user.isActive ? "active" : "expired",
 
     creditBalance,
     creditsReserved,

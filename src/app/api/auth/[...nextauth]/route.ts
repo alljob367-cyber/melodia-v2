@@ -36,7 +36,7 @@ function getNextauthUrl() {
   return process.env.NEXTAUTH_URL || "http://localhost:3000";
 }
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -72,7 +72,7 @@ const handler = NextAuth({
             return null;
           }
 
-          console.log("[auth] ✅ Login successful:", credentials.email);
+          console.log("[auth] Login successful:", credentials.email);
           return {
             id: user.id,
             email: user.email,
@@ -111,7 +111,9 @@ const handler = NextAuth({
   session: {
     strategy: "jwt" as const,
   },
-  secret: process.env.NEXTAUTH_SECRET, // MUST be set in production — no hardcoded fallback
-});
+  secret: process.env.NEXTAUTH_SECRET,
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

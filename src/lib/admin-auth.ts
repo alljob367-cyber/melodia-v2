@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 /**
  * Verify that the current request comes from an admin user.
@@ -7,7 +8,7 @@ import { NextResponse } from "next/server";
  * Use at the start of every /api/admin/* route handler.
  */
 export async function requireAdmin(): Promise<NextResponse | null> {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
     return NextResponse.json(

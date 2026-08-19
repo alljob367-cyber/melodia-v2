@@ -8,6 +8,7 @@
 
 import { UserContext } from "./user-context";
 import { CreditEngine, CreditOperation, estimateCost } from "./credit-engine";
+import crypto from "crypto";
 import { GenerationService, MediaService } from "./services";
 import { EventBus } from "./event-bus";
 import {
@@ -90,7 +91,12 @@ export class AIOrchestrator {
    */
   static async execute(ctx: GenerationContext): Promise<OrchestratorResult> {
     const startTime = Date.now();
-    const idempotencyKey = `${ctx.user.userId}-${ctx.operation}-${Date.now()}`;
+    const inputHash = crypto
+      .createHash('sha256')
+      .update(JSON.stringify(ctx.input))
+      .digest('hex')
+      .slice(0, 12);
+    const idempotencyKey = `${ctx.user.userId}-${ctx.operation}-${inputHash}-${ctx.projectId || 'none'}-${ctx.artistId || 'none'}`;
 
     // ---- Step 1: Estimate cost ----
     const costEstimate = estimateCost(ctx.operation, {

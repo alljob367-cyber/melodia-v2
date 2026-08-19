@@ -40,7 +40,7 @@ interface PricingPlan {
 
 const plans: PricingPlan[] = [
   {
-    id: "decouverte",
+    id: "basic",
     name: "Découverte",
     price: 2000,
     credits: 20,
@@ -60,7 +60,7 @@ const plans: PricingPlan[] = [
     ],
   },
   {
-    id: "production",
+    id: "artist_starter",
     name: "Production Musicale",
     price: 5000,
     credits: 60,
@@ -80,7 +80,7 @@ const plans: PricingPlan[] = [
     ],
   },
   {
-    id: "artiste_actif",
+    id: "artist_production",
     name: "Artiste Actif",
     price: 10000,
     credits: 120,
@@ -101,7 +101,7 @@ const plans: PricingPlan[] = [
     ],
   },
   {
-    id: "video_studio",
+    id: "video_creator",
     name: "Vidéo Studio",
     price: 15000,
     credits: 180,
@@ -182,7 +182,7 @@ export default function SubscriptionPage() {
   const { data: session } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
-  const userPlan = (session?.user as any)?.plan || "decouverte";
+  const userPlan = (session?.user as any)?.plan || "basic";
 
   return (
     <div className="min-h-screen bg-[#0B0B14]">

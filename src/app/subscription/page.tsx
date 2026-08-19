@@ -83,7 +83,7 @@ const plans: PricingPlan[] = [
     id: "artist_production",
     name: "Artiste Actif",
     price: 10000,
-    credits: 120,
+    credits: 100,
     popular: true,
     accentColor: "text-purple-400",
     borderColor: "border-purple-500/40",
@@ -104,7 +104,7 @@ const plans: PricingPlan[] = [
     id: "video_creator",
     name: "Vidéo Studio",
     price: 15000,
-    credits: 180,
+    credits: 150,
     launchLocked: true,
     accentColor: "text-cyan-400",
     borderColor: "border-cyan-500/20",
@@ -120,10 +120,10 @@ const plans: PricingPlan[] = [
     ],
   },
   {
-    id: "artiste_pro",
+    id: "artist_pro",
     name: "Artiste Professionnel",
     price: 25000,
-    credits: 350,
+    credits: 250,
     accentColor: "text-amber-400",
     borderColor: "border-amber-500/20",
     bgGlow: "",
@@ -144,7 +144,7 @@ const plans: PricingPlan[] = [
     id: "label",
     name: "Label / Studio",
     price: 50000,
-    credits: 800,
+    credits: 500,
     accentColor: "text-emerald-400",
     borderColor: "border-emerald-500/20",
     bgGlow: "",
@@ -165,7 +165,7 @@ const plans: PricingPlan[] = [
 
 // Comparison table
 const comparisonFeatures = [
-  { name: "Crédits/mois", values: ["20", "60", "120", "180", "350", "800"] },
+  { name: "Crédits/mois", values: ["20", "50", "100", "150", "250", "500"] },
   { name: "Audio Studio", values: ["✓", "✓ Complet", "✓ Complet", "✓ Complet", "✓ Pro", "✓ Pro"] },
   { name: "Cover Studio", values: ["✓", "✓", "✓ Premium", "✓", "✓ Pro", "✓ Pro"] },
   { name: "MELO IA", values: ["✓", "✓ Producteur", "✓ Producteur", "✓", "✓", "✓"] },
@@ -348,7 +348,13 @@ export default function SubscriptionPage() {
                             ? "btn-gradient text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
                             : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
                         )}
-                        onClick={() => toast.success(`Plan ${plan.name} sélectionné ! Redirection vers le paiement...`)}
+                        onClick={() => {
+                          if (plan.id === userPlan) {
+                            toast.info("Tu es déjà sur ce plan !");
+                            return;
+                          }
+                          toast.success(`Plan ${plan.name} sélectionné ! Redirection vers le paiement...`);
+                        }}
                       >
                         {plan.popular ? (
                           <><Crown className="w-4 h-4 mr-2" />Choisir ce plan</>
@@ -410,7 +416,10 @@ export default function SubscriptionPage() {
                       {plan.launchLocked ? (
                         <Badge className="text-[9px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Bientôt</Badge>
                       ) : (
-                        <Button size="sm" className={cn("font-bold text-xs rounded-lg", plan.popular ? "btn-gradient text-white" : "bg-white/10 text-white hover:bg-white/20 border border-white/10")} onClick={() => toast.success(`Plan ${plan.name} sélectionné !`)}>
+                        <Button size="sm" className={cn("font-bold text-xs rounded-lg", plan.popular ? "btn-gradient text-white" : "bg-white/10 text-white hover:bg-white/20 border border-white/10")} onClick={() => {
+                          if (plan.id === userPlan) { toast.info("Tu es déjà sur ce plan !"); return; }
+                          toast.success(`Plan ${plan.name} sélectionné !`);
+                        }}>
                           Choisir
                         </Button>
                       )}

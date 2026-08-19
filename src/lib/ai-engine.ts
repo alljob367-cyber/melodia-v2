@@ -17,6 +17,7 @@ import fs from "fs";
 import { put } from "@vercel/blob";
 import ffmpegStatic from "ffmpeg-static";
 import { generateTTS, generateCoverArtMulti, generateVideoMulti, getProviderSummary } from "./ai-providers";
+import { callMelodiaAI, getModelsForPlan } from "./ai-router";
 
 const execFileAsync = promisify(execFile);
 
@@ -159,10 +160,11 @@ export async function generateLyrics(
   mood: string,
   theme: string,
   language: string = "fr",
-  additionalPrompt?: string
+  additionalPrompt?: string,
+  plan: string = "basic"
 ): Promise<LyricsResult> {
   const lang = language === "fr" ? "français" : language === "en" ? "English" : language;
-  
+
   const systemPrompt = `Tu es un parolier professionnel africain. Tu écris des chansons originales, poétiques et authentiques pour les artistes africains. Tes paroles reflètent la culture, les rhythms et les réalités du continent. Tu écris en ${lang}. Tu dois TOUJOURS répondre UNIQUEMENT avec les paroles, sans commentaires ni explications.`;
 
   const userPrompt = `Écris les paroles complètes d'une chanson avec ces caractéristiques:
@@ -196,8 +198,33 @@ Format requis:
 
 Les paroles doivent être authentiques, poétiques, et refléter l'âme africaine. Utilise des métaphores, des images fortes, et un flow naturel pour le style ${style}.`;
 
+  // Try OpenRouter HTTP API first (works on Vercel)
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      console.log("[lyrics] Using OpenRouter API for lyrics generation...");
+      const result = await callMelodiaAI(plan as any, [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ], { temperature: 0.8, maxTokens: 2048 });
+
+      return {
+        lyrics: result.content,
+        structure: "verse-chorus-verse-chorus-bridge-chorus-outro",
+        tokens: result.usage.inputTokens + result.usage.outputTokens,
+        cost: 0.003,
+      };
+    } catch (err) {
+      console.warn("[lyrics] OpenRouter failed, trying z-ai CLI fallback:", err);
+    }
+  }
+
+  // Fallback: z-ai CLI (local dev only)
+  if (IS_VERCEL) {
+    throw new Error("OPENROUTER_API_KEY is required for lyrics generation. Configure it in Vercel environment variables.");
+  }
+
   const outputFile = path.join(OUTPUT_DIR, "lyrics", `lyrics-${Date.now()}.json`);
-  
+
   const { stdout } = await execFileAsync(ZAI_CLI, [
     "chat",
     "--prompt", userPrompt,
@@ -208,15 +235,14 @@ Les paroles doivent être authentiques, poétiques, et refléter l'âme africain
   const result = JSON.parse(fs.readFileSync(outputFile, "utf-8"));
   const lyrics = result.choices[0].message.content;
   const tokens = result.usage?.total_tokens || 0;
-  
-  // Clean up temp file
+
   try { fs.unlinkSync(outputFile); } catch {}
 
   return {
     lyrics,
     structure: "verse-chorus-verse-chorus-bridge-chorus-outro",
     tokens,
-    cost: 0.003, // ~$0.003 per lyrics generation
+    cost: 0.003,
   };
 }
 
@@ -226,7 +252,8 @@ export async function generateComposition(
   title: string,
   style: string,
   mood: string,
-  lyrics: string
+  lyrics: string,
+  plan: string = "basic"
 ): Promise<CompositionResult> {
   const systemPrompt = `Tu es un compositeur et producteur musical africain expert. Tu analyses les paroles et conçois une composition musicale détaillée avec accords, tempo, instruments et arrangement. Réponds en format structuré.`;
 
@@ -244,8 +271,35 @@ Donne-moi:
 
 Sois spécifique au style ${style} africain.`;
 
+  // Try OpenRouter HTTP API first
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      console.log("[composition] Using OpenRouter API...");
+      const result = await callMelodiaAI(plan as any, [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ], { temperature: 0.6, maxTokens: 1024 });
+
+      return {
+        composition: result.content,
+        tempo: "120",
+        key: "C minor",
+        instruments: ["drums", "bass", "guitar", "synths"],
+        tokens: result.usage.inputTokens + result.usage.outputTokens,
+        cost: 0.004,
+      };
+    } catch (err) {
+      console.warn("[composition] OpenRouter failed, trying z-ai CLI fallback:", err);
+    }
+  }
+
+  // Fallback: z-ai CLI (local dev only)
+  if (IS_VERCEL) {
+    throw new Error("OPENROUTER_API_KEY is required for composition generation.");
+  }
+
   const outputFile = path.join(OUTPUT_DIR, "lyrics", `comp-${Date.now()}.json`);
-  
+
   await execFileAsync(ZAI_CLI, [
     "chat",
     "--prompt", userPrompt,
@@ -256,7 +310,7 @@ Sois spécifique au style ${style} africain.`;
   const result = JSON.parse(fs.readFileSync(outputFile, "utf-8"));
   const composition = result.choices[0].message.content;
   const tokens = result.usage?.total_tokens || 0;
-  
+
   try { fs.unlinkSync(outputFile); } catch {}
 
   return {

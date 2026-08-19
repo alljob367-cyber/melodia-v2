@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
+/**
+ * Seed the database with initial data (admin, demo user, credit packs).
+ * This is called automatically on first auth attempt.
+ * Seed is idempotent — safe to call multiple times.
+ */
 export async function GET() {
   try {
     // Check if admin user already exists
@@ -16,12 +21,12 @@ export async function GET() {
       });
     }
 
-    // V4 Seed pricing packs
+    // V4 Seed pricing packs — plan names MUST match prisma schema & permission-engine
     const packs = [
       {
-        id: "pack-decouverte",
+        id: "pack-basic",
         name: "Découverte",
-        plan: "decouverte",
+        plan: "basic",
         price: 2000,
         credits: 20,
         songsLimit: 2,
@@ -35,9 +40,9 @@ export async function GET() {
         sortOrder: 1,
       },
       {
-        id: "pack-production",
+        id: "pack-artist-starter",
         name: "Production Musicale",
-        plan: "production",
+        plan: "artist_starter",
         price: 5000,
         credits: 60,
         songsLimit: 8,
@@ -51,9 +56,9 @@ export async function GET() {
         sortOrder: 2,
       },
       {
-        id: "pack-artiste-actif",
+        id: "pack-artist-production",
         name: "Artiste Actif",
-        plan: "artiste_actif",
+        plan: "artist_production",
         price: 10000,
         credits: 120,
         songsLimit: 15,
@@ -68,9 +73,9 @@ export async function GET() {
         sortOrder: 3,
       },
       {
-        id: "pack-video-studio",
+        id: "pack-video-creator",
         name: "Vidéo Studio",
-        plan: "video_studio",
+        plan: "video_creator",
         price: 15000,
         credits: 180,
         songsLimit: 20,
@@ -84,9 +89,9 @@ export async function GET() {
         sortOrder: 4,
       },
       {
-        id: "pack-artiste-pro",
+        id: "pack-artist-pro",
         name: "Artiste Professionnel",
-        plan: "artiste_pro",
+        plan: "artist_pro",
         price: 25000,
         credits: 350,
         songsLimit: 50,
@@ -132,7 +137,7 @@ export async function GET() {
     const adminHashedPw = await bcrypt.hash(adminPassword, 10);
     const adminUser = await db.user.upsert({
       where: { email: "admin@melodia.ai" },
-      update: { password: adminHashedPw },
+      update: { password: adminHashedPw, plan: "label" },
       create: {
         email: "admin@melodia.ai",
         name: "Admin MELODIA",
@@ -142,18 +147,18 @@ export async function GET() {
       },
     });
 
-    // Create demo user — password from env or fallback
+    // Create demo user
     const demoPassword = process.env.DEMO_SEED_PASSWORD || "demo123";
     const demoHashedPw = await bcrypt.hash(demoPassword, 10);
     const demoUser = await db.user.upsert({
       where: { email: "jean@example.com" },
-      update: { password: demoHashedPw },
+      update: { password: demoHashedPw, plan: "artist_starter" },
       create: {
         email: "jean@example.com",
         name: "Jean Paul",
         password: demoHashedPw,
         role: "user",
-        plan: "production",
+        plan: "artist_starter",
       },
     });
 
@@ -193,17 +198,17 @@ export async function GET() {
       },
     });
 
-    // FIX #8: Never return plaintext passwords in response
     return NextResponse.json({
       status: "seeded",
       message: "Database seeded successfully",
       admin: "admin@melodia.ai (password set)",
       demo: "jean@example.com (password set)",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Seed failed";
     console.error("[seed] Error:", error);
     return NextResponse.json(
-      { status: "error", message: error.message || "Seed failed" },
+      { status: "error", message },
       { status: 500 }
     );
   }

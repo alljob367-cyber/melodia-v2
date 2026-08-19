@@ -14,10 +14,38 @@ async function ensureSeed() {
     });
     if (!admin) {
       console.log("[auth] No admin user found, seeding directly...");
-      // Seed directly instead of HTTP call (works on Vercel serverless)
       try {
-        const { GET: seedHandler } = await import("@/app/api/seed/route");
-        await seedHandler();
+        // Direct DB seed — no HTTP call (works reliably on Vercel serverless)
+        const adminPassword = process.env.ADMIN_SEED_PASSWORD || "admin123";
+        const adminHashedPw = await bcrypt.hash(adminPassword, 10);
+        const adminUser = await db.user.upsert({
+          where: { email: "admin@melodia.ai" },
+          update: { password: adminHashedPw, plan: "label" },
+          create: {
+            email: "admin@melodia.ai",
+            name: "Admin MELODIA",
+            password: adminHashedPw,
+            role: "admin",
+            plan: "label",
+          },
+        });
+        await db.userCredits.upsert({
+          where: { userId: adminUser.id },
+          update: {},
+          create: {
+            userId: adminUser.id,
+            credits: 500,
+            songsRemaining: 999,
+            coversRemaining: 999,
+            videosRemaining: 30,
+            totalSongsUsed: 0,
+            totalCoversUsed: 0,
+            totalVideosUsed: 0,
+            totalCreditsUsed: 0,
+            storageUsedMb: 0,
+          },
+        });
+        console.log("[auth] Admin user seeded successfully");
       } catch (seedErr) {
         console.error("[auth] Seed failed:", seedErr);
       }
